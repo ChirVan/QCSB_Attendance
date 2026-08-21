@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>BandSync - Band Attendance Management</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top App Bar -->
+        <header class="app-header">
+            <div class="header-main">
+                <div class="logo-area">
+                    <div class="logo-icon"><i data-lucide="music"></i></div>
+                    <div>
+                        <h1>BandSync</h1>
+                        <span class="sub-heading">Admin Attendance System</span>
+                    </div>
+                </div>
+                <button id="btn-quick-new-event" class="primary-icon-btn" title="Create Event">
+                    <i data-lucide="plus"></i>
+                    <span>New Event</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- VIEW 1: Active Event & Live Attendance -->
+        <main id="view-events" class="tab-view active">
+            <!-- Event Selector & Info Card -->
+            <div class="event-selector-bar">
+                <label for="active-event-select" class="selector-label"><i data-lucide="calendar"></i> Select Event:</label>
+                <select id="active-event-select" class="event-dropdown"></select>
+            </div>
+
+            <div id="active-event-card" class="event-hero-card">
+                <!-- Dynamically injected event hero info -->
+            </div>
+
+            <!-- Stats Overview Banner -->
+            <section class="stats-overview">
+                <div class="stat-card present-stat">
+                    <span class="stat-num" id="stat-present">0</span>
+                    <span class="stat-label">Present</span>
+                </div>
+                <div class="stat-card absent-stat">
+                    <span class="stat-num" id="stat-absent">0</span>
+                    <span class="stat-label">Absent</span>
+                </div>
+                <div class="stat-card leave-stat">
+                    <span class="stat-num" id="stat-leave">0</span>
+                    <span class="stat-label">Leave</span>
+                </div>
+                <div class="stat-card careof-stat">
+                    <span class="stat-num" id="stat-careof">0</span>
+                    <span class="stat-label">Care Of</span>
+                </div>
+                <div class="stat-card highlight-stat">
+                    <span class="stat-num" id="stat-turnout">0%</span>
+                    <span class="stat-label">Turnout</span>
+                </div>
+            </section>
+
+            <!-- Maestro Section -->
+            <div class="section-container">
+                <div class="section-title">
+                    <i data-lucide="crown"></i>
+                    <span>Designated Maestro</span>
+                </div>
+                <div id="event-maestro-card" class="maestro-card">
+                    <!-- Dynamic Maestro attendance row -->
+                </div>
+            </div>
+
+            <!-- Roster Attendance Checklist -->
+            <div class="section-container">
+                <div class="section-header-row">
+                    <div class="section-title">
+                        <i data-lucide="users"></i>
+                        <span>Ensemble Roster</span>
+                        <span id="roster-count-badge" class="badge">0</span>
+                    </div>
+                    <button id="btn-mark-all-present" class="text-btn">Mark All Present</button>
+                </div>
+
+                <div class="search-bar-wrapper">
+                    <i data-lucide="search" class="search-icon"></i>
+                    <input type="text" id="roster-search" placeholder="Search musicians or instruments...">
+                </div>
+
+                <div id="attendance-roster-list" class="roster-list">
+                    <!-- Dynamic attendance list with Present, Absent, On Leave buttons -->
+                </div>
+            </div>
+
+            <!-- Sticky Save & Share Bar -->
+            <div class="event-action-bar">
+                <button id="btn-save-attendance" class="action-btn save-btn">
+                    <i data-lucide="save"></i>
+                    <span>Save Attendance</span>
+                </button>
+                <button id="btn-copy-report" class="action-btn share-btn">
+                    <i data-lucide="share-2"></i>
+                    <span>Share Report</span>
+                </button>
+            </div>
+        </main>
+
+        <!-- VIEW 2: Historical Events & Reports -->
+        <section id="view-history" class="tab-view hidden">
+            <div class="view-header">
+                <h2>Event History & Analytics</h2>
+                <p class="view-desc">Review past event summaries, attendance turnouts, and aggregate performance.</p>
+            </div>
+
+            <!-- Filters -->
+            <div class="filter-card">
+                <div class="filter-group">
+                    <label><i data-lucide="filter"></i> Band Type</label>
+                    <select id="filter-band-type">
+                        <option value="all">All Ensembles</option>
+                        <option value="band1">Band 1</option>
+                        <option value="band2">Band 2</option>
+                        <option value="full">Full Band</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label><i data-lucide="user-check"></i> Maestro</label>
+                    <select id="filter-maestro">
+                        <option value="all">All Maestros</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label><i data-lucide="calendar"></i> Date Range</label>
+                    <select id="filter-date-range">
+                        <option value="all">All Time</option>
+                        <option value="30days">Last 30 Days</option>
+                        <option value="90days">Last 90 Days</option>
+                        <option value="upcoming">Upcoming Only</option>
+                        <option value="past">Past Events</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="history-events-list" class="history-list">
+                <!-- Dynamically populated past event summary cards -->
+            </div>
+        </section>
+
+        <!-- VIEW 3: Roster & Band Management (CRUD) -->
+        <section id="view-roster" class="tab-view hidden">
+            <div class="view-header">
+                <div class="flex-between">
+                    <div>
+                        <h2>Band & Roster Management</h2>
+                        <p class="view-desc">Manage musicians, instrument sections, and primary conductors.</p>
+                    </div>
+                    <button id="btn-add-musician" class="primary-icon-btn">
+                        <i data-lucide="user-plus"></i>
+                        <span>Add Musician</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Primary Maestro Assignments -->
+            <div class="maestro-config-card">
+                <div class="config-title">
+                    <i data-lucide="award"></i>
+                    <span>Primary Band Maestros</span>
+                </div>
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label for="select-band1-maestro">Band 1 Maestro</label>
+                        <select id="select-band1-maestro" class="compact-select"></select>
+                    </div>
+                    <div class="form-field">
+                        <label for="select-band2-maestro">Band 2 Maestro</label>
+                        <select id="select-band2-maestro" class="compact-select"></select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Roster Filters & Search -->
+            <div class="band-pills-nav">
+                <button class="pill-btn active" data-roster-filter="all">All Musicians</button>
+                <button class="pill-btn" data-roster-filter="band1">Band 1</button>
+                <button class="pill-btn" data-roster-filter="band2">Band 2</button>
+                <button class="pill-btn" data-roster-filter="both">Both / Full</button>
+            </div>
+
+            <div class="search-bar-wrapper">
+                <i data-lucide="search" class="search-icon"></i>
+                <input type="text" id="manage-roster-search" placeholder="Search by name, instrument, or contact...">
+            </div>
+
+            <div id="manage-musicians-list" class="musicians-management-list">
+                <!-- Dynamically populated member cards with edit/delete -->
+            </div>
+        </section>
+
+        <!-- Mobile Bottom Navigation Bar -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-target="view-events">
+                <i data-lucide="clipboard-check"></i>
+                <span>Attendance</span>
+            </button>
+            <button class="nav-item" data-target="view-history">
+                <i data-lucide="bar-chart-3"></i>
+                <span>History</span>
+            </button>
+            <button class="nav-item" data-target="view-roster">
+                <i data-lucide="users-2"></i>
+                <span>Roster</span>
+            </button>
+        </nav>
+
+        <!-- MODAL: Create / Edit Event -->
+        <div id="modal-event" class="modal-overlay hidden">
+            <div class="modal-sheet">
+                <div class="modal-header">
+                    <h2 id="modal-event-title">Schedule New Event</h2>
+                    <button class="close-modal-btn" data-close="modal-event"><i data-lucide="x"></i></button>
+                </div>
+                <form id="form-event" class="modal-body">
+                    <input type="hidden" id="event-form-id">
+                    
+                    <div class="form-field">
+                        <label for="event-input-title">Event Title *</label>
+                        <input type="text" id="event-input-title" placeholder="e.g. Symphony Gala, Friday Rehearsal" required>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-field">
+                            <label for="event-input-date">Date *</label>
+                            <input type="date" id="event-input-date" required>
+                        </div>
+                        <div class="form-field">
+                            <label for="event-input-time">Call Time *</label>
+                            <input type="time" id="event-input-time" required>
+                        </div>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="event-input-venue">Venue / Location *</label>
+                        <input type="text" id="event-input-venue" placeholder="e.g. Grand Concert Hall, Studio B" required>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="event-input-band">Assigned Ensemble Type *</label>
+                        <select id="event-input-band" required>
+                            <option value="band1">Band 1</option>
+                            <option value="band2">Band 2</option>
+                            <option value="full">Full Band (Band 1 + Band 2)</option>
+                        </select>
+                    </div>
+
+                    <!-- Designated Maestro (Required if Full Band) -->
+                    <div id="full-band-maestro-group" class="form-field hidden">
+                        <label for="event-input-maestro">Designated Performance Maestro *</label>
+                        <select id="event-input-maestro"></select>
+                        <span class="field-hint">Select the maestro leading this Full Band performance.</span>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="submit" class="submit-btn">
+                            <i data-lucide="check"></i>
+                            <span>Save Event</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- MODAL: Add / Edit Musician -->
+        <div id="modal-musician" class="modal-overlay hidden">
+            <div class="modal-sheet">
+                <div class="modal-header">
+                    <h2 id="modal-musician-title">Add Musician</h2>
+                    <button class="close-modal-btn" data-close="modal-musician"><i data-lucide="x"></i></button>
+                </div>
+                <form id="form-musician" class="modal-body">
+                    <input type="hidden" id="musician-form-id">
+
+                    <div class="form-field">
+                        <label for="musician-input-name">Full Name *</label>
+                        <input type="text" id="musician-input-name" placeholder="e.g. Sarah Jenkins" required>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-field">
+                            <label for="musician-input-instrument">Instrument / Section *</label>
+                            <input type="text" id="musician-input-instrument" placeholder="e.g. Trumpet, First Violin, Percussion" required>
+                        </div>
+                        <div class="form-field">
+                            <label for="musician-input-band">Assigned Band *</label>
+                            <select id="musician-input-band" required>
+                                <option value="band1">Band 1</option>
+                                <option value="band2">Band 2</option>
+                                <option value="both">Both (Band 1 & 2)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="musician-input-contact">Contact Details (Phone / Email)</label>
+                        <input type="text" id="musician-input-contact" placeholder="e.g. +1 555-0199, sarah@band.com">
+                    </div>
+
+                    <div class="form-checkbox-row">
+                        <input type="checkbox" id="musician-input-maestro">
+                        <label for="musician-input-maestro">Register as Conductor / Maestro Candidate</label>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="submit" class="submit-btn">
+                            <i data-lucide="check"></i>
+                            <span>Save Musician</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- MODAL: Assign Care Of (Substitute) -->
+        <div id="modal-careof" class="modal-overlay hidden">
+            <div class="modal-sheet">
+                <div class="modal-header">
+                    <h2>Assign Care Of (Substitute)</h2>
+                    <button class="close-modal-btn" data-close="modal-careof"><i data-lucide="x"></i></button>
+                </div>
+                <form id="form-careof" class="modal-body">
+                    <input type="hidden" id="careof-member-id">
+                    
+                    <div class="form-field">
+                        <label>Absent Musician</label>
+                        <input type="text" id="careof-musician-name" readonly style="opacity: 0.8; font-weight: bold; background: rgba(255,255,255,0.08);">
+                    </div>
+
+                    <div class="form-field">
+                        <label for="careof-select-substitute">Select Colleague Covering (Care Of By):</label>
+                        <select id="careof-select-substitute"></select>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="careof-custom-name">Or Type Custom / External Substitute Name:</label>
+                        <input type="text" id="careof-custom-name" placeholder="e.g. Guest Performer Alex">
+                    </div>
+
+                    <div class="modal-footer" style="display:flex; gap:10px;">
+                        <button type="button" id="btn-remove-careof" class="sm-btn" style="flex:1; justify-content:center; padding:12px; color:var(--color-absent); border-color:var(--color-absent-border);">
+                            <i data-lucide="trash-2"></i> Remove C/O
+                        </button>
+                        <button type="submit" class="submit-btn" style="flex:2;">
+                            <i data-lucide="user-check"></i>
+                            <span>Confirm Care Of</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden">Action successful!</div>
+
+    <script src="app.js"></script>
+</body>
+</html>
