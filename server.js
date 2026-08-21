@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const mongoose = require('mongoose');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,7 +14,63 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// Initial Seed Data (Empty)
+// ----------------------------------------------------
+// MONGODB CLOUD DATABASE INTEGRATION
+// ----------------------------------------------------
+let isMongoConnected = false;
+const MONGODB_URI = process.env.MONGODB_URI;
+
+// Mongoose Schemas
+const MemberSchema = new mongoose.Schema({
+    id: { type: String, required: true, unique: true },
+    name: { type: String, required: true },
+    instrument: { type: String, required: true },
+    assignedBand: { type: String, default: 'band1' },
+    contact: { type: String, default: '' },
+    isMaestro: { type: Boolean, default: false },
+    isDeleted: { type: Boolean, default: false }
+}, { timestamps: true });
+
+const ConfigSchema = new mongoose.Schema({
+    key: { type: String, default: 'global', unique: true },
+    band1MaestroId: { type: String, default: '' },
+    band2MaestroId: { type: String, default: '' }
+}, { timestamps: true });
+
+const EventSchema = new mongoose.Schema({
+    id: { type: String, required: true, unique: true },
+    title: { type: String, required: true },
+    date: { type: String, required: true },
+    callTime: { type: String, default: '18:00' },
+    venue: { type: String, required: true },
+    ensembleType: { type: String, default: 'band1' },
+    maestroId: { type: String, default: '' },
+    attendance: { type: Object, default: {} },
+    careOfDetails: { type: Object, default: {} },
+    status: { type: String, default: 'scheduled' }
+}, { timestamps: true, minimize: false });
+
+const MemberModel = mongoose.model('Member', MemberSchema);
+const ConfigModel = mongoose.model('Config', ConfigSchema);
+const EventModel = mongoose.model('Event', EventSchema);
+
+if (MONGODB_URI) {
+    mongoose.connect(MONGODB_URI)
+        .then(() => {
+            isMongoConnected = true;
+            console.log('✅ Connected to MongoDB Atlas Cloud Database!');
+        })
+        .catch(err => {
+            console.error('❌ MongoDB Connection Error. Falling back to local db.json:', err.message);
+            isMongoConnected = false;
+        });
+} else {
+    console.log('ℹ️ No MONGODB_URI provided. Running in local JSON storage mode (data/db.json).');
+}
+
+// ----------------------------------------------------
+// LOCAL JSON DATABASE FALLBACK HELPERS
+// ----------------------------------------------------
 const SEED_DATA = {
     members: [],
     config: {
@@ -23,7 +80,6 @@ const SEED_DATA = {
     events: []
 };
 
-// Database Helpers
 function readDatabase() {
     try {
         if (!fs.existsSync(DB_DIR)) {
@@ -58,25 +114,51 @@ function writeDatabase(data) {
 // REST API ENDPOINTS
 // ----------------------------------------------------
 
-// GET Full State
-app.get('/api/state', (req, res) => {
+// 1. GET Full Application State
+app.get('/api/state', async (req, res) => {
+    if (isMongoConnected) {
+        try {
+            const [members, configDoc, events] = await Promise.all([
+                MemberModel.find().lean(),
+                ConfigModel.findOne({ key: 'global' }).lean(),
+                EventModel.find().sort({ date: -1 }).lean()
+            ]);
+
+            const config = configDoc ? {
+                band1MaestroId: configDoc.band1MaestroId || '',
+                band2MaestroId: configDoc.band2MaestroId || ''
+            } : { band1MaestroId: '', band2MaestroId: '' };
+
+            return res.json({ members, config, events });
+        } catch (err) {
+            console.error('MongoDB state fetch error:', err);
+        }
+    }
+
     const db = readDatabase();
     res.json(db);
 });
 
-// MEMBERS CRUD
-app.get('/api/members', (req, res) => {
+// 2. MEMBERS CRUD
+app.get('/api/members', async (req, res) => {
+    if (isMongoConnected) {
+        try {
+            const members = await MemberModel.find().lean();
+            return res.json(members);
+        } catch (err) {
+            console.error('MongoDB get members error:', err);
+        }
+    }
     const db = readDatabase();
     res.json(db.members || []);
 });
 
-app.post('/api/members', (req, res) => {
+app.post('/api/members', async (req, res) => {
     const { name, instrument, assignedBand, contact, isMaestro } = req.body;
     if (!name || !instrument) {
         return res.status(400).json({ error: 'Name and instrument are required.' });
     }
 
-    const db = readDatabase();
     const newMember = {
         id: 'mem_' + Date.now(),
         name: name.trim(),
@@ -87,16 +169,35 @@ app.post('/api/members', (req, res) => {
         isDeleted: false
     };
 
+    if (isMongoConnected) {
+        try {
+            const created = await MemberModel.create(newMember);
+            return res.status(201).json(created);
+        } catch (err) {
+            console.error('MongoDB create member error:', err);
+        }
+    }
+
+    const db = readDatabase();
     db.members.push(newMember);
     writeDatabase(db);
     res.status(201).json(newMember);
 });
 
-app.put('/api/members/:id', (req, res) => {
+app.put('/api/members/:id', async (req, res) => {
     const { id } = req.params;
     const updates = req.body;
-    const db = readDatabase();
 
+    if (isMongoConnected) {
+        try {
+            const updated = await MemberModel.findOneAndUpdate({ id }, { $set: updates }, { new: true });
+            if (updated) return res.json(updated);
+        } catch (err) {
+            console.error('MongoDB update member error:', err);
+        }
+    }
+
+    const db = readDatabase();
     const member = db.members.find(m => m.id === id);
     if (!member) {
         return res.status(404).json({ error: 'Member not found.' });
@@ -113,51 +214,94 @@ app.put('/api/members/:id', (req, res) => {
     res.json(member);
 });
 
-app.delete('/api/members/:id', (req, res) => {
+app.delete('/api/members/:id', async (req, res) => {
     const { id } = req.params;
-    const db = readDatabase();
 
+    if (isMongoConnected) {
+        try {
+            const archived = await MemberModel.findOneAndUpdate({ id }, { $set: { isDeleted: true } }, { new: true });
+            if (archived) return res.json({ message: 'Member archived successfully.', member: archived });
+        } catch (err) {
+            console.error('MongoDB delete member error:', err);
+        }
+    }
+
+    const db = readDatabase();
     const member = db.members.find(m => m.id === id);
     if (!member) {
         return res.status(404).json({ error: 'Member not found.' });
     }
 
-    // Soft delete to maintain historical attendance integrity
     member.isDeleted = true;
     writeDatabase(db);
     res.json({ message: 'Member archived successfully.', member });
 });
 
-// CONFIG (Primary Maestros)
-app.get('/api/config', (req, res) => {
+// 3. CONFIG (Primary Maestros)
+app.get('/api/config', async (req, res) => {
+    if (isMongoConnected) {
+        try {
+            const configDoc = await ConfigModel.findOne({ key: 'global' }).lean();
+            if (configDoc) {
+                return res.json({
+                    band1MaestroId: configDoc.band1MaestroId || '',
+                    band2MaestroId: configDoc.band2MaestroId || ''
+                });
+            }
+        } catch (err) {
+            console.error('MongoDB get config error:', err);
+        }
+    }
+
     const db = readDatabase();
     res.json(db.config || {});
 });
 
-app.put('/api/config', (req, res) => {
-    const db = readDatabase();
+app.put('/api/config', async (req, res) => {
     const { band1MaestroId, band2MaestroId } = req.body;
 
-    if (band1MaestroId) db.config.band1MaestroId = band1MaestroId;
-    if (band2MaestroId) db.config.band2MaestroId = band2MaestroId;
+    if (isMongoConnected) {
+        try {
+            const updated = await ConfigModel.findOneAndUpdate(
+                { key: 'global' },
+                { $set: { band1MaestroId, band2MaestroId } },
+                { upsert: true, new: true }
+            );
+            return res.json(updated);
+        } catch (err) {
+            console.error('MongoDB update config error:', err);
+        }
+    }
+
+    const db = readDatabase();
+    if (band1MaestroId !== undefined) db.config.band1MaestroId = band1MaestroId;
+    if (band2MaestroId !== undefined) db.config.band2MaestroId = band2MaestroId;
 
     writeDatabase(db);
     res.json(db.config);
 });
 
-// EVENTS & ATTENDANCE
-app.get('/api/events', (req, res) => {
+// 4. EVENTS & ATTENDANCE
+app.get('/api/events', async (req, res) => {
+    if (isMongoConnected) {
+        try {
+            const events = await EventModel.find().sort({ date: -1 }).lean();
+            return res.json(events);
+        } catch (err) {
+            console.error('MongoDB get events error:', err);
+        }
+    }
+
     const db = readDatabase();
     res.json(db.events || []);
 });
 
-app.post('/api/events', (req, res) => {
+app.post('/api/events', async (req, res) => {
     const { title, date, callTime, venue, ensembleType, maestroId } = req.body;
     if (!title || !date || !venue) {
         return res.status(400).json({ error: 'Title, date, and venue are required.' });
     }
 
-    const db = readDatabase();
     const newEvent = {
         id: 'evt_' + Date.now(),
         title: title.trim(),
@@ -165,22 +309,41 @@ app.post('/api/events', (req, res) => {
         callTime: callTime || '18:00',
         venue: venue.trim(),
         ensembleType: ensembleType || 'band1',
-        maestroId: maestroId || (ensembleType === 'band2' ? db.config.band2MaestroId : db.config.band1MaestroId),
+        maestroId: maestroId || '',
         attendance: {},
         careOfDetails: {},
         status: 'scheduled'
     };
 
+    if (isMongoConnected) {
+        try {
+            const created = await EventModel.create(newEvent);
+            return res.status(201).json(created);
+        } catch (err) {
+            console.error('MongoDB create event error:', err);
+        }
+    }
+
+    const db = readDatabase();
     db.events.unshift(newEvent);
     writeDatabase(db);
     res.status(201).json(newEvent);
 });
 
-app.put('/api/events/:id', (req, res) => {
+app.put('/api/events/:id', async (req, res) => {
     const { id } = req.params;
     const updates = req.body;
-    const db = readDatabase();
 
+    if (isMongoConnected) {
+        try {
+            const updated = await EventModel.findOneAndUpdate({ id }, { $set: updates }, { new: true });
+            if (updated) return res.json(updated);
+        } catch (err) {
+            console.error('MongoDB update event error:', err);
+        }
+    }
+
+    const db = readDatabase();
     const evt = db.events.find(e => e.id === id);
     if (!evt) {
         return res.status(404).json({ error: 'Event not found.' });
@@ -198,12 +361,24 @@ app.put('/api/events/:id', (req, res) => {
     res.json(evt);
 });
 
-// Record / Update Attendance & Care Of for an Event
-app.put('/api/events/:id/attendance', (req, res) => {
+app.put('/api/events/:id/attendance', async (req, res) => {
     const { id } = req.params;
     const { attendance, careOfDetails, status } = req.body;
-    const db = readDatabase();
 
+    if (isMongoConnected) {
+        try {
+            const updated = await EventModel.findOneAndUpdate(
+                { id },
+                { $set: { attendance, careOfDetails, status } },
+                { new: true }
+            );
+            if (updated) return res.json(updated);
+        } catch (err) {
+            console.error('MongoDB update attendance error:', err);
+        }
+    }
+
+    const db = readDatabase();
     const evt = db.events.find(e => e.id === id);
     if (!evt) {
         return res.status(404).json({ error: 'Event not found.' });
@@ -217,10 +392,19 @@ app.put('/api/events/:id/attendance', (req, res) => {
     res.json(evt);
 });
 
-app.delete('/api/events/:id', (req, res) => {
+app.delete('/api/events/:id', async (req, res) => {
     const { id } = req.params;
-    const db = readDatabase();
 
+    if (isMongoConnected) {
+        try {
+            const deleted = await EventModel.findOneAndDelete({ id });
+            if (deleted) return res.json({ message: 'Event deleted.', event: deleted });
+        } catch (err) {
+            console.error('MongoDB delete event error:', err);
+        }
+    }
+
+    const db = readDatabase();
     const index = db.events.findIndex(e => e.id === id);
     if (index === -1) {
         return res.status(404).json({ error: 'Event not found.' });
@@ -231,7 +415,7 @@ app.delete('/api/events/:id', (req, res) => {
     res.json({ message: 'Event deleted.', event: deleted });
 });
 
-// Fallback to index.html for single page app
+// Single-page app fallback
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -240,7 +424,7 @@ app.get('*', (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`====================================================`);
     console.log(`🎵 BandSync Server is running on port ${PORT}`);
-    console.log(`💻 Local access:   http://localhost:${PORT}`);
-    console.log(`📱 Mobile access:  http://<your-ip-address>:${PORT}`);
+    console.log(`💾 Database: ${MONGODB_URI ? 'MongoDB Atlas (Cloud)' : 'Local JSON file (data/db.json)'}`);
+    console.log(`💻 Local:    http://localhost:${PORT}`);
     console.log(`====================================================`);
 });
