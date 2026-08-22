@@ -20,6 +20,8 @@ let state = {
     rosterFilter: 'all',
     rosterSearch: '',
     attendanceSearch: '',
+    attendanceSort: 'name-asc',
+    rosterSort: 'name-asc',
     historyFilters: {
         bandType: 'all',
         maestro: 'all',
@@ -280,9 +282,21 @@ function renderActiveEventView() {
     }
 
     // Filter roster by search
-    const filteredRoster = assignedMembers.filter(m => {
+    let filteredRoster = assignedMembers.filter(m => {
         const q = state.attendanceSearch.toLowerCase();
         return m.name.toLowerCase().includes(q) || m.instrument.toLowerCase().includes(q);
+    });
+
+    // Sort Musicians (Maestro remains spotlighted above)
+    filteredRoster.sort((a, b) => {
+        if (state.attendanceSort === 'name-asc') {
+            return a.name.localeCompare(b.name);
+        } else if (state.attendanceSort === 'name-desc') {
+            return b.name.localeCompare(a.name);
+        } else if (state.attendanceSort === 'instrument-asc') {
+            return a.instrument.localeCompare(b.instrument) || a.name.localeCompare(b.name);
+        }
+        return 0;
     });
 
     // Render Musicians Roster
@@ -541,6 +555,18 @@ function renderRosterView() {
         );
     }
 
+    // Sort Roster
+    filtered.sort((a, b) => {
+        if (state.rosterSort === 'name-asc') {
+            return a.name.localeCompare(b.name);
+        } else if (state.rosterSort === 'name-desc') {
+            return b.name.localeCompare(a.name);
+        } else if (state.rosterSort === 'instrument-asc') {
+            return a.instrument.localeCompare(b.instrument) || a.name.localeCompare(b.name);
+        }
+        return 0;
+    });
+
     if (filtered.length === 0) {
         listContainer.innerHTML = `<p class="view-desc" style="text-align: center; padding: 20px 0;">No musicians found.</p>`;
         return;
@@ -663,12 +689,21 @@ function setupEventListeners() {
         copySingleEventReport(state.activeEventId);
     });
 
-    // Attendance Live Search
+    // Attendance Live Search & Sort
     document.getElementById('roster-search').addEventListener('input', (e) => {
         state.attendanceSearch = e.target.value;
         renderActiveEventView();
         lucide.createIcons();
     });
+
+    const attendanceSortSelect = document.getElementById('attendance-sort-order');
+    if (attendanceSortSelect) {
+        attendanceSortSelect.addEventListener('change', (e) => {
+            state.attendanceSort = e.target.value;
+            renderActiveEventView();
+            lucide.createIcons();
+        });
+    }
 
     // Primary Maestro change handlers
     document.getElementById('select-band1-maestro').addEventListener('change', (e) => {
@@ -696,59 +731,91 @@ function setupEventListeners() {
         });
     });
 
-    // Roster Search Input
+    // Roster Search & Sort Input
     document.getElementById('manage-roster-search').addEventListener('input', (e) => {
         state.rosterSearch = e.target.value;
         renderRosterView();
         lucide.createIcons();
     });
 
+    const rosterSortSelect = document.getElementById('roster-sort-order');
+    if (rosterSortSelect) {
+        rosterSortSelect.addEventListener('change', (e) => {
+            state.rosterSort = e.target.value;
+            renderRosterView();
+            lucide.createIcons();
+        });
+    }
+
     // Add Musician Button
-    document.getElementById('btn-add-musician').addEventListener('click', () => openNewMusicianModal());
+    const btnAddMusician = document.getElementById('btn-add-musician');
+    if (btnAddMusician) {
+        btnAddMusician.addEventListener('click', () => openNewMusicianModal());
+    }
 
     // History Filters
-    document.getElementById('filter-band-type').addEventListener('change', (e) => {
-        state.historyFilters.bandType = e.target.value;
-        renderHistoryView();
-        lucide.createIcons();
-    });
+    const filterBandType = document.getElementById('filter-band-type');
+    if (filterBandType) {
+        filterBandType.addEventListener('change', (e) => {
+            state.historyFilters.bandType = e.target.value;
+            renderHistoryView();
+            lucide.createIcons();
+        });
+    }
 
-    document.getElementById('filter-maestro').addEventListener('change', (e) => {
-        state.historyFilters.maestro = e.target.value;
-        renderHistoryView();
-        lucide.createIcons();
-    });
+    const filterMaestro = document.getElementById('filter-maestro');
+    if (filterMaestro) {
+        filterMaestro.addEventListener('change', (e) => {
+            state.historyFilters.maestro = e.target.value;
+            renderHistoryView();
+            lucide.createIcons();
+        });
+    }
 
-    document.getElementById('filter-date-range').addEventListener('change', (e) => {
-        state.historyFilters.dateRange = e.target.value;
-        renderHistoryView();
-        lucide.createIcons();
-    });
+    const filterDateRange = document.getElementById('filter-date-range');
+    if (filterDateRange) {
+        filterDateRange.addEventListener('change', (e) => {
+            state.historyFilters.dateRange = e.target.value;
+            renderHistoryView();
+            lucide.createIcons();
+        });
+    }
 
     // Modal Close Buttons
     document.querySelectorAll('.close-modal-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const modalId = e.currentTarget.getAttribute('data-close');
-            document.getElementById(modalId).classList.add('hidden');
+            const targetModal = document.getElementById(modalId);
+            if (targetModal) targetModal.classList.add('hidden');
         });
     });
 
     // Ensemble type change in event modal (Conditional Designated Maestro for Full Band)
     const ensembleSelect = document.getElementById('event-input-band');
-    ensembleSelect.addEventListener('change', (e) => {
-        const fullMaestroGroup = document.getElementById('full-band-maestro-group');
-        if (e.target.value === 'full') {
-            fullMaestroGroup.classList.remove('hidden');
-        } else {
-            fullMaestroGroup.classList.add('hidden');
-        }
-    });
+    if (ensembleSelect) {
+        ensembleSelect.addEventListener('change', (e) => {
+            const fullMaestroGroup = document.getElementById('full-band-maestro-group');
+            if (fullMaestroGroup) {
+                if (e.target.value === 'full') {
+                    fullMaestroGroup.classList.remove('hidden');
+                } else {
+                    fullMaestroGroup.classList.add('hidden');
+                }
+            }
+        });
+    }
 
     // Event Form Submission
-    document.getElementById('form-event').addEventListener('submit', handleEventFormSubmit);
+    const formEvent = document.getElementById('form-event');
+    if (formEvent) {
+        formEvent.addEventListener('submit', handleEventFormSubmit);
+    }
 
     // Musician Form Submission
-    document.getElementById('form-musician').addEventListener('submit', handleMusicianFormSubmit);
+    const formMusician = document.getElementById('form-musician');
+    if (formMusician) {
+        formMusician.addEventListener('submit', handleMusicianFormSubmit);
+    }
 
     // Care Of (Substitute) Form Submission
     const formCareOf = document.getElementById('form-careof');

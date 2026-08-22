@@ -91,9 +91,19 @@
                     <button id="btn-mark-all-present" class="text-btn">Mark All Present</button>
                 </div>
 
-                <div class="search-bar-wrapper">
-                    <i data-lucide="search" class="search-icon"></i>
-                    <input type="text" id="roster-search" placeholder="Search musicians or instruments...">
+                <div class="search-sort-row">
+                    <div class="search-bar-wrapper">
+                        <i data-lucide="search" class="search-icon"></i>
+                        <input type="text" id="roster-search" placeholder="Search musicians or instruments...">
+                    </div>
+                    <div class="sort-wrapper">
+                        <i data-lucide="arrow-up-down" class="sort-icon"></i>
+                        <select id="attendance-sort-order" class="sort-dropdown" title="Sort Order">
+                            <option value="name-asc">Name (A → Z)</option>
+                            <option value="name-desc">Name (Z → A)</option>
+                            <option value="instrument-asc">Instrument (A → Z)</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div id="attendance-roster-list" class="roster-list">
@@ -160,8 +170,8 @@
             <div class="view-header">
                 <div class="flex-between">
                     <div>
-                        <h2>Band & Roster Management</h2>
-                        <p class="view-desc">Manage musicians, instrument sections, and primary conductors.</p>
+                        <h2>Band & Musician Roster</h2>
+                        <p class="view-desc">Manage employee directory, section assignments, and conductor leads.</p>
                     </div>
                     <button id="btn-add-musician" class="primary-icon-btn">
                         <i data-lucide="user-plus"></i>
@@ -196,9 +206,19 @@
                 <button class="pill-btn" data-roster-filter="both">Both / Full</button>
             </div>
 
-            <div class="search-bar-wrapper">
-                <i data-lucide="search" class="search-icon"></i>
-                <input type="text" id="manage-roster-search" placeholder="Search by name, instrument, or contact...">
+            <div class="search-sort-row">
+                <div class="search-bar-wrapper">
+                    <i data-lucide="search" class="search-icon"></i>
+                    <input type="text" id="manage-roster-search" placeholder="Search by name, instrument, or contact...">
+                </div>
+                <div class="sort-wrapper">
+                    <i data-lucide="arrow-up-down" class="sort-icon"></i>
+                    <select id="roster-sort-order" class="sort-dropdown" title="Sort Order">
+                        <option value="name-asc">Name (A → Z)</option>
+                        <option value="name-desc">Name (Z → A)</option>
+                        <option value="instrument-asc">Instrument (A → Z)</option>
+                    </select>
+                </div>
             </div>
 
             <div id="manage-musicians-list" class="musicians-management-list">

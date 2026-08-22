@@ -524,6 +524,52 @@ select option {
     border-color: var(--color-careof-border);
 }
 
+/* Search & Sort Toolbar */
+.search-sort-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.search-sort-row .search-bar-wrapper {
+    flex: 1;
+}
+
+.sort-wrapper {
+    position: relative;
+    width: 140px;
+    flex-shrink: 0;
+}
+
+.sort-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    color: #818cf8;
+    pointer-events: none;
+}
+
+.sort-dropdown {
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: #ffffff;
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 10px 8px 10px 30px;
+    border-radius: 12px;
+    outline: none;
+    cursor: pointer;
+}
+
+.sort-dropdown:focus {
+    border-color: var(--border-focus);
+}
+
 /* Search Bar */
 .search-bar-wrapper {
     position: relative;
