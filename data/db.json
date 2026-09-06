@@ -1,8 +1,70 @@
 {
-  "members": [],
+  "members": [
+    {
+      "id": "mem_1787385837814",
+      "name": "Zoe Adams",
+      "instrument": "Flute",
+      "assignedBand": "band1",
+      "contact": "",
+      "isMaestro": false,
+      "isDeleted": false
+    },
+    {
+      "id": "mem_1787385972592",
+      "name": "Brian Clark",
+      "instrument": "Trumpet",
+      "assignedBand": "band2",
+      "contact": "",
+      "isMaestro": false,
+      "isDeleted": false
+    },
+    {
+      "id": "mem_1787386139449",
+      "name": "Arthur Pendelton",
+      "instrument": "Conductor",
+      "assignedBand": "band1",
+      "contact": "",
+      "isMaestro": true,
+      "isDeleted": false
+    },
+    {
+      "id": "mem_1787386292783",
+      "name": "David Evans",
+      "instrument": "Conductor",
+      "assignedBand": "band2",
+      "contact": "",
+      "isMaestro": true,
+      "isDeleted": false
+    }
+  ],
   "config": {
-    "band1MaestroId": "",
-    "band2MaestroId": ""
+    "band1MaestroId": "mem_1787386139449",
+    "band2MaestroId": "mem_1787385972592"
   },
-  "events": []
+  "events": [
+    {
+      "id": "evt_1788612457499",
+      "title": "Band 2 Autumn Concert",
+      "date": "2026-09-05",
+      "callTime": "18:00",
+      "venue": "Main Hall B",
+      "ensembleType": "band2",
+      "maestroId": "mem_1787385972592",
+      "attendance": {},
+      "careOfDetails": {},
+      "status": "scheduled"
+    },
+    {
+      "id": "evt_1787387211334",
+      "title": "Band 1 Evening Gala",
+      "date": "2026-08-30",
+      "callTime": "19:00",
+      "venue": "Symphony Hall A",
+      "ensembleType": "band1",
+      "maestroId": "mem_1787386138907",
+      "attendance": {},
+      "careOfDetails": {},
+      "status": "scheduled"
+    }
+  ]
 }
