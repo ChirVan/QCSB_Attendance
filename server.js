@@ -29,6 +29,7 @@ const MemberSchema = new mongoose.Schema({
     assignedBand: { type: String, default: 'band1' },
     contact: { type: String, default: '' },
     isMaestro: { type: Boolean, default: false },
+    isCoordinator: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false }
 }, { timestamps: true });
 
@@ -47,6 +48,7 @@ const EventSchema = new mongoose.Schema({
     ensembleType: { type: String, default: 'full' },
     customMemberIds: { type: [String], default: [] },
     maestroId: { type: String, default: '' },
+    coordinatorIds: { type: [String], default: [] },
     attendance: { type: Object, default: {} },
     careOfDetails: { type: Object, default: {} },
     status: { type: String, default: 'scheduled' }
@@ -156,7 +158,7 @@ app.get('/api/members', async (req, res) => {
 });
 
 app.post('/api/members', async (req, res) => {
-    const { name, instrument, assignedBand, contact, isMaestro } = req.body;
+    const { name, instrument, assignedBand, contact, isMaestro, isCoordinator } = req.body;
     if (!name || !instrument) {
         return res.status(400).json({ error: 'Name and instrument are required.' });
     }
@@ -168,6 +170,7 @@ app.post('/api/members', async (req, res) => {
         assignedBand: assignedBand || 'band1',
         contact: contact ? contact.trim() : '',
         isMaestro: !!isMaestro,
+        isCoordinator: !!isCoordinator,
         isDeleted: false
     };
 
@@ -210,6 +213,7 @@ app.put('/api/members/:id', async (req, res) => {
     if (updates.assignedBand !== undefined) member.assignedBand = updates.assignedBand;
     if (updates.contact !== undefined) member.contact = updates.contact.trim();
     if (updates.isMaestro !== undefined) member.isMaestro = !!updates.isMaestro;
+    if (updates.isCoordinator !== undefined) member.isCoordinator = !!updates.isCoordinator;
     if (updates.isDeleted !== undefined) member.isDeleted = !!updates.isDeleted;
 
     writeDatabase(db);
@@ -299,7 +303,7 @@ app.get('/api/events', async (req, res) => {
 });
 
 app.post('/api/events', async (req, res) => {
-    const { title, date, callTime, venue, ensembleType, customMemberIds, maestroId } = req.body;
+    const { title, date, callTime, venue, ensembleType, customMemberIds, maestroId, coordinatorIds } = req.body;
     if (!title || !date || !venue) {
         return res.status(400).json({ error: 'Title, date, and venue are required.' });
     }
@@ -313,6 +317,7 @@ app.post('/api/events', async (req, res) => {
         ensembleType: ensembleType || 'full',
         customMemberIds: Array.isArray(customMemberIds) ? customMemberIds : [],
         maestroId: maestroId || '',
+        coordinatorIds: Array.isArray(coordinatorIds) ? coordinatorIds : [],
         attendance: {},
         careOfDetails: {},
         status: 'scheduled'

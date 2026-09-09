@@ -355,13 +355,73 @@ function renderActiveEventView() {
         maestroCard.innerHTML = `<p class="view-desc">No designated maestro for this event.</p>`;
     }
 
+    // Coordinators Section
+    const coordContainer = document.getElementById('event-coordinators-list');
+    const coordBadge = document.getElementById('coordinator-count-badge');
+    const coordinatorObjs = (activeEvent.coordinatorIds || [])
+        .map(id => state.members.find(m => m.id === id && !m.isDeleted))
+        .filter(Boolean);
+
+    if (coordBadge) coordBadge.textContent = coordinatorObjs.length;
+
+    if (coordContainer) {
+        if (coordinatorObjs.length === 0) {
+            coordContainer.innerHTML = `<p class="view-desc" style="padding: 4px 0; font-style: italic;">No coordinator designated for this event.</p>`;
+        } else {
+            coordContainer.innerHTML = coordinatorObjs.map(c => {
+                const cStatus = activeEvent.attendance[c.id] || '';
+                const coveredBy = (activeEvent.careOfDetails && activeEvent.careOfDetails[c.id]) || '';
+
+                if (isEditing) {
+                    return `
+                        <div class="coordinator-card">
+                            <div class="member-info-row">
+                                <div class="member-name-tag">
+                                    <span class="member-name">${escapeHtml(c.name)}</span>
+                                    <span class="member-sub"><span class="badge-coordinator"><i data-lucide="shield-check" style="width:10px;height:10px;"></i> Coordinator</span> &bull; ${escapeHtml(c.instrument)}</span>
+                                    ${cStatus === 'careof' ? `<span class="careof-badge" style="cursor:pointer;" onclick="handleCareOfClick('${activeEvent.id}', '${c.id}')"><i data-lucide="refresh-cw" style="width:11px; height:11px;"></i> C/O: ${escapeHtml(coveredBy)} (Edit)</span>` : ''}
+                                </div>
+                            </div>
+                            <div class="attendance-actions">
+                                <button class="att-btn present ${cStatus === 'present' ? 'active' : ''}" onclick="setAttendanceStatus('${activeEvent.id}', '${c.id}', 'present')">
+                                    <i data-lucide="check-circle-2"></i> Present
+                                </button>
+                                <button class="att-btn absent ${cStatus === 'absent' ? 'active' : ''}" onclick="setAttendanceStatus('${activeEvent.id}', '${c.id}', 'absent')">
+                                    <i data-lucide="x-circle"></i> Absent
+                                </button>
+                                <button class="att-btn leave ${cStatus === 'leave' ? 'active' : ''}" onclick="setAttendanceStatus('${activeEvent.id}', '${c.id}', 'leave')">
+                                    <i data-lucide="clock-4"></i> Leave
+                                </button>
+                                <button class="att-btn careof ${cStatus === 'careof' ? 'active' : ''}" onclick="handleCareOfClick('${activeEvent.id}', '${c.id}')">
+                                    <i data-lucide="refresh-cw"></i> C/O
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div class="coordinator-card">
+                            <div class="member-info-row" style="align-items: center;">
+                                <div class="member-name-tag">
+                                    <span class="member-name">${escapeHtml(c.name)}</span>
+                                    <span class="member-sub"><span class="badge-coordinator"><i data-lucide="shield-check" style="width:10px;height:10px;"></i> Coordinator</span> &bull; ${escapeHtml(c.instrument)}</span>
+                                </div>
+                                ${getStatusBadge(cStatus, coveredBy)}
+                            </div>
+                        </div>
+                    `;
+                }
+            }).join('');
+        }
+    }
+
     // Filter roster by search
     let filteredRoster = assignedMembers.filter(m => {
         const q = state.attendanceSearch.toLowerCase();
         return m.name.toLowerCase().includes(q) || m.instrument.toLowerCase().includes(q);
     });
 
-    // Sort Musicians (Maestro remains spotlighted above)
+    // Sort Musicians (Maestro & Coordinators remain spotlighted above)
     filteredRoster.sort((a, b) => {
         if (state.attendanceSort === 'name-asc') {
             return a.name.localeCompare(b.name);
@@ -423,8 +483,12 @@ function renderActiveEventView() {
         }).join('');
     }
 
-    // Calculate Summary Stats for this Event (Including Maestro if present)
-    const allParticipants = maestroObj ? [maestroObj, ...assignedMembers] : assignedMembers;
+    // Calculate Summary Stats for this Event (Including Maestro & Coordinators)
+    const allParticipants = [
+        ...(maestroObj ? [maestroObj] : []),
+        ...coordinatorObjs,
+        ...assignedMembers
+    ];
     let presentCount = 0;
     let absentCount = 0;
     let leaveCount = 0;
@@ -451,12 +515,14 @@ function updateStatsCounters(present, absent, leave, careof, turnout) {
     document.getElementById('stat-turnout').textContent = `${turnout}%`;
 }
 
-// Get assigned roster based on ensemble selection
+// Get assigned roster based on ensemble selection (Excludes Maestro and Coordinators who have spotlight sections)
 function getEventRoster(event) {
     const maestroId = event.maestroId;
+    const coordIds = new Set(event.coordinatorIds || []);
     return state.members.filter(m => {
         if (m.isDeleted) return false;
         if (m.id === maestroId) return false; // Maestro is displayed separately in spotlight
+        if (coordIds.has(m.id)) return false; // Coordinators are displayed in coordinator section
 
         if (event.ensembleType === 'band1') {
             return m.assignedBand === 'band1' || m.assignedBand === 'both';
@@ -580,7 +646,14 @@ function renderHistoryView() {
     listContainer.innerHTML = filteredEvents.map(evt => {
         const roster = getEventRoster(evt);
         const maestroObj = state.members.find(m => m.id === evt.maestroId);
-        const allParticipants = maestroObj ? [maestroObj, ...roster] : roster;
+        const coordinatorObjs = (evt.coordinatorIds || [])
+            .map(id => state.members.find(m => m.id === id && !m.isDeleted))
+            .filter(Boolean);
+        const allParticipants = [
+            ...(maestroObj ? [maestroObj] : []),
+            ...coordinatorObjs,
+            ...roster
+        ];
         
         let pCount = 0, aCount = 0, lCount = 0, cCount = 0;
         allParticipants.forEach(p => {
@@ -666,9 +739,10 @@ function renderRosterView() {
     listContainer.innerHTML = filtered.map(m => `
         <div class="member-crud-card">
             <div class="member-crud-info">
-                <div style="display:flex; align-items:center; gap:6px;">
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                     <span class="member-name">${escapeHtml(m.name)}</span>
-                    ${m.isMaestro ? '<i data-lucide="crown" style="width:14px; height:14px; color:gold;"></i>' : ''}
+                    ${m.isMaestro ? '<i data-lucide="crown" style="width:13px; height:13px; color:gold;" title="Conductor / Maestro"></i>' : ''}
+                    ${m.isCoordinator ? '<span class="badge-coordinator"><i data-lucide="shield-check" style="width:10px; height:10px;"></i> Coordinator</span>' : ''}
                 </div>
                 <div class="member-meta-tags">
                     <span class="section-tag">${escapeHtml(m.instrument)}</span>
@@ -989,6 +1063,14 @@ function setupEventListeners() {
         });
     }
 
+    // Coordinator search in event modal
+    const coordSearchInput = document.getElementById('event-coordinator-search');
+    if (coordSearchInput) {
+        coordSearchInput.addEventListener('input', (e) => {
+            renderEventCoordinatorChecklist(null, e.target.value);
+        });
+    }
+
     // Event Form Submission
     const formEvent = document.getElementById('form-event');
     if (formEvent) {
@@ -1109,6 +1191,65 @@ window.toggleCustomMemberSelection = function(memberId, isChecked) {
     }
 };
 
+// Coordinator Selection Helper in Event Modal
+let eventCoordinatorSelectedIds = new Set();
+
+function renderEventCoordinatorChecklist(selectedIds = null, filterText = '') {
+    if (selectedIds !== null) {
+        eventCoordinatorSelectedIds = new Set(selectedIds);
+    }
+
+    const container = document.getElementById('event-coordinator-items');
+    const countBadge = document.getElementById('event-coordinators-count');
+    if (!container) return;
+
+    const activeMembers = state.members.filter(m => !m.isDeleted);
+    let filtered = activeMembers;
+    if (filterText && filterText.trim()) {
+        const q = filterText.toLowerCase();
+        filtered = filtered.filter(m => m.name.toLowerCase().includes(q) || m.instrument.toLowerCase().includes(q));
+    }
+
+    // Sort registered coordinators to the top, then alphabetically
+    filtered.sort((a, b) => {
+        if (a.isCoordinator && !b.isCoordinator) return -1;
+        if (!a.isCoordinator && b.isCoordinator) return 1;
+        return a.name.localeCompare(b.name);
+    });
+
+    if (filtered.length === 0) {
+        container.innerHTML = `<p class="view-desc" style="text-align:center; padding: 10px 0;">No members found.</p>`;
+    } else {
+        container.innerHTML = filtered.map(m => {
+            const isChecked = eventCoordinatorSelectedIds.has(m.id);
+            return `
+                <label class="custom-member-item">
+                    <input type="checkbox" value="${m.id}" ${isChecked ? 'checked' : ''} onchange="toggleCoordinatorSelection('${m.id}', this.checked)">
+                    <span class="custom-mem-name">${escapeHtml(m.name)} ${m.isCoordinator ? '<span class="badge-coordinator" style="font-size:9.5px; padding:0 4px;"><i data-lucide="shield-check" style="width:9px;height:9px;"></i> Coordinator</span>' : ''}</span>
+                    <span class="custom-mem-meta">${escapeHtml(m.instrument)} &bull; ${getBandLabel(m.assignedBand)}</span>
+                </label>
+            `;
+        }).join('');
+    }
+
+    if (countBadge) {
+        countBadge.textContent = `${eventCoordinatorSelectedIds.size} selected`;
+    }
+    if (window.lucide) lucide.createIcons();
+}
+
+window.toggleCoordinatorSelection = function(memberId, isChecked) {
+    if (isChecked) {
+        eventCoordinatorSelectedIds.add(memberId);
+    } else {
+        eventCoordinatorSelectedIds.delete(memberId);
+    }
+    const countBadge = document.getElementById('event-coordinators-count');
+    if (countBadge) {
+        countBadge.textContent = `${eventCoordinatorSelectedIds.size} selected`;
+    }
+};
+
 // Open and populate Event modal for creation
 function openNewEventModal() {
     document.getElementById('modal-event-title').textContent = 'Schedule New Event';
@@ -1125,6 +1266,10 @@ function openNewEventModal() {
     renderCustomRosterChecklist([]);
     document.getElementById('custom-roster-group').classList.add('hidden');
     document.getElementById('full-band-maestro-group').classList.remove('hidden');
+
+    document.getElementById('event-coordinator-search').value = '';
+    renderEventCoordinatorChecklist([]);
+
     openModal('modal-event');
 }
 
@@ -1163,6 +1308,9 @@ window.openEditEventModal = function(eventId) {
         if (fullMaestroGroup) fullMaestroGroup.classList.add('hidden');
     }
 
+    document.getElementById('event-coordinator-search').value = '';
+    renderEventCoordinatorChecklist(evt.coordinatorIds || []);
+
     openModal('modal-event');
 };
 
@@ -1180,6 +1328,7 @@ function handleEventFormSubmit(e) {
 
     let maestroId = '';
     let customMemberIds = [];
+    const coordinatorIds = Array.from(eventCoordinatorSelectedIds);
 
     if (ensembleType === 'band1') {
         maestroId = state.config.band1MaestroId;
@@ -1209,6 +1358,7 @@ function handleEventFormSubmit(e) {
             evt.ensembleType = ensembleType;
             evt.customMemberIds = customMemberIds;
             evt.maestroId = maestroId;
+            evt.coordinatorIds = coordinatorIds;
             saveState();
             apiSaveEvent(evt, false);
         }
@@ -1224,6 +1374,7 @@ function handleEventFormSubmit(e) {
             ensembleType,
             customMemberIds,
             maestroId,
+            coordinatorIds,
             attendance: {},
             careOfDetails: {},
             status: 'scheduled'
@@ -1249,6 +1400,7 @@ function openNewMusicianModal() {
     document.getElementById('musician-input-band').value = 'band1';
     document.getElementById('musician-input-contact').value = '';
     document.getElementById('musician-input-maestro').checked = false;
+    document.getElementById('musician-input-coordinator').checked = false;
     openModal('modal-musician');
 }
 
@@ -1263,6 +1415,7 @@ window.openEditMusicianModal = function(memberId) {
     document.getElementById('musician-input-band').value = mem.assignedBand;
     document.getElementById('musician-input-contact').value = mem.contact || '';
     document.getElementById('musician-input-maestro').checked = !!mem.isMaestro;
+    document.getElementById('musician-input-coordinator').checked = !!mem.isCoordinator;
     openModal('modal-musician');
 };
 
@@ -1277,6 +1430,7 @@ function handleMusicianFormSubmit(e) {
     const assignedBand = document.getElementById('musician-input-band').value;
     const contact = document.getElementById('musician-input-contact').value.trim();
     const isMaestro = document.getElementById('musician-input-maestro').checked;
+    const isCoordinator = document.getElementById('musician-input-coordinator').checked;
 
     if (id) {
         const mem = state.members.find(m => m.id === id);
@@ -1286,6 +1440,7 @@ function handleMusicianFormSubmit(e) {
             mem.assignedBand = assignedBand;
             mem.contact = contact;
             mem.isMaestro = isMaestro;
+            mem.isCoordinator = isCoordinator;
             saveState();
             apiSaveMember(mem, false);
         }
@@ -1298,6 +1453,7 @@ function handleMusicianFormSubmit(e) {
             assignedBand,
             contact,
             isMaestro,
+            isCoordinator,
             isDeleted: false
         };
         state.members.push(newMember);
@@ -1336,7 +1492,14 @@ window.copySingleEventReport = function(eventId) {
 
     const roster = getEventRoster(evt);
     const maestroObj = state.members.find(m => m.id === evt.maestroId);
-    const allParticipants = maestroObj ? [maestroObj, ...roster] : roster;
+    const coordinatorObjs = (evt.coordinatorIds || [])
+        .map(id => state.members.find(m => m.id === id && !m.isDeleted))
+        .filter(Boolean);
+    const allParticipants = [
+        ...(maestroObj ? [maestroObj] : []),
+        ...coordinatorObjs,
+        ...roster
+    ];
 
     let pList = [], aList = [], lList = [], cList = [], uList = [];
     allParticipants.forEach(p => {
@@ -1359,6 +1522,9 @@ window.copySingleEventReport = function(eventId) {
     report += `📍 *Venue:* ${evt.venue}\n`;
     report += `🎺 *Ensemble:* ${getEnsembleLabel(evt.ensembleType)}\n`;
     report += `👑 *Maestro:* ${maestroObj ? maestroObj.name : 'N/A'}\n`;
+    if (coordinatorObjs.length > 0) {
+        report += `🛡️ *Coordinator(s):* ${coordinatorObjs.map(c => c.name).join(', ')}\n`;
+    }
     report += `📊 *Turnout:* ${turnout}% (${pList.length + cList.length}/${allParticipants.length})\n\n`;
 
     report += `✅ *PRESENT (${pList.length}):*\n` + (pList.length ? pList.map(i => `  • ${i}`).join('\n') : '  None') + '\n\n';

@@ -91,6 +91,18 @@
                 </div>
             </div>
 
+            <!-- Coordinators Section -->
+            <div id="event-coordinators-section" class="section-container">
+                <div class="section-title">
+                    <i data-lucide="shield-check" style="color: #22d3ee;"></i>
+                    <span>Event Coordinator(s)</span>
+                    <span id="coordinator-count-badge" class="badge">0</span>
+                </div>
+                <div id="event-coordinators-list" class="coordinator-cards-list">
+                    <!-- Dynamic Coordinator attendance rows -->
+                </div>
+            </div>
+
             <!-- Roster Attendance Checklist -->
             <div class="section-container">
                 <div class="section-header-row">
@@ -138,89 +150,89 @@
         <!-- VIEW 2: Historical Events & Reports -->
         <section id="view-history" class="tab-view hidden">
             <div class="view-header">
-                <h2>Event History & Analytics</h2>
-                <p class="view-desc">Review past event summaries, attendance turnouts, and aggregate performance.</p>
+                <h2>Event History & Reports</h2>
+                <p class="view-desc">Archived attendance logs, substitute records, and exportable reports.</p>
             </div>
 
-            <!-- Filters -->
-            <div class="filter-card">
-                <div class="filter-group">
-                    <label><i data-lucide="filter"></i> Band Type</label>
-                    <select id="filter-band-type">
-                        <option value="all">All Ensembles</option>
-                        <option value="full">Full Band (Full Roster)</option>
-                        <option value="band1">Band 1</option>
-                        <option value="band2">Band 2</option>
-                        <option value="custom">Custom Ensemble</option>
-                    </select>
+            <div class="filter-controls-card">
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label for="filter-band-type">Filter Ensemble</label>
+                        <select id="filter-band-type">
+                            <option value="all">All Ensembles</option>
+                            <option value="full">Full Band</option>
+                            <option value="band1">Band 1</option>
+                            <option value="band2">Band 2</option>
+                            <option value="custom">Custom Ensemble</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label for="filter-maestro">Filter Maestro</label>
+                        <select id="filter-maestro">
+                            <option value="all">All Maestros</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="filter-group">
-                    <label><i data-lucide="user-check"></i> Maestro</label>
-                    <select id="filter-maestro">
-                        <option value="all">All Maestros</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label><i data-lucide="calendar"></i> Date Range</label>
+                <div class="form-field">
+                    <label for="filter-date-range">Date Range</label>
                     <select id="filter-date-range">
                         <option value="all">All Time</option>
+                        <option value="upcoming">Upcoming Events Only</option>
+                        <option value="past">Past Events Only</option>
                         <option value="30days">Last 30 Days</option>
                         <option value="90days">Last 90 Days</option>
-                        <option value="upcoming">Upcoming Only</option>
-                        <option value="past">Past Events</option>
                     </select>
                 </div>
             </div>
 
             <div id="history-events-list" class="history-list">
-                <!-- Dynamically populated past event summary cards -->
+                <!-- Dynamically populated past events -->
             </div>
         </section>
 
-        <!-- VIEW 3: Roster & Band Management (CRUD) -->
+        <!-- VIEW 3: Musician Roster & Band Management -->
         <section id="view-roster" class="tab-view hidden">
-            <div class="view-header">
-                <div class="flex-between">
-                    <div>
-                        <h2>Band & Musician Roster</h2>
-                        <p class="view-desc">Manage employee directory, section assignments, and conductor leads.</p>
+            <div class="view-header flex-between">
+                <div>
+                    <h2>Band Roster</h2>
+                    <p class="view-desc">Manage musicians, instrument assignments, and maestros.</p>
+                </div>
+                <button id="btn-add-musician" class="primary-icon-btn">
+                    <i data-lucide="user-plus"></i>
+                    <span>Add Musician</span>
+                </button>
+            </div>
+
+            <!-- Primary Maestro Assignment Card -->
+            <div class="config-card">
+                <div class="section-title">
+                    <i data-lucide="crown"></i>
+                    <span>Primary Conductor Assignments</span>
+                </div>
+                <div class="form-grid" style="margin-top: 10px;">
+                    <div class="form-field">
+                        <label for="select-band1-maestro">Band 1 Primary Maestro</label>
+                        <select id="select-band1-maestro"></select>
                     </div>
-                    <button id="btn-add-musician" class="primary-icon-btn">
-                        <i data-lucide="user-plus"></i>
-                        <span>Add Musician</span>
-                    </button>
+                    <div class="form-field">
+                        <label for="select-band2-maestro">Band 2 Primary Maestro</label>
+                        <select id="select-band2-maestro"></select>
+                    </div>
                 </div>
             </div>
 
-            <!-- Primary Maestro Assignments -->
-            <div class="maestro-config-card">
-                <div class="config-title">
-                    <i data-lucide="award"></i>
-                    <span>Primary Band Maestros</span>
-                </div>
-                <div class="form-grid">
-                    <div class="form-field">
-                        <label for="select-band1-maestro">Band 1 Maestro</label>
-                        <select id="select-band1-maestro" class="compact-select"></select>
-                    </div>
-                    <div class="form-field">
-                        <label for="select-band2-maestro">Band 2 Maestro</label>
-                        <select id="select-band2-maestro" class="compact-select"></select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Roster Filters & Search -->
-            <div class="band-pills-nav">
+            <!-- Roster Sub-nav Tabs -->
+            <div class="pill-nav">
                 <button class="pill-btn active" data-roster-filter="all">Full Band (Full Roster)</button>
                 <button class="pill-btn" data-roster-filter="band1">Band 1</button>
                 <button class="pill-btn" data-roster-filter="band2">Band 2</button>
             </div>
 
+            <!-- Roster Search & Sort -->
             <div class="search-sort-row">
                 <div class="search-bar-wrapper">
                     <i data-lucide="search" class="search-icon"></i>
-                    <input type="text" id="manage-roster-search" placeholder="Search by name, instrument, or contact...">
+                    <input type="text" id="manage-roster-search" placeholder="Search roster by name, instrument...">
                 </div>
                 <div class="sort-wrapper">
                     <i data-lucide="arrow-up-down" class="sort-icon"></i>
@@ -232,8 +244,9 @@
                 </div>
             </div>
 
-            <div id="manage-musicians-list" class="musicians-management-list">
-                <!-- Dynamically populated member cards with edit/delete -->
+            <!-- Musician Cards List -->
+            <div id="manage-musicians-list" class="musician-crud-list">
+                <!-- Dynamically populated roster cards -->
             </div>
         </section>
 
@@ -265,12 +278,12 @@
                     
                     <div class="form-field">
                         <label for="event-input-title">Event Title *</label>
-                        <input type="text" id="event-input-title" placeholder="e.g. Symphony Gala, Friday Rehearsal" required>
+                        <input type="text" id="event-input-title" placeholder="e.g. Annual Gala Concert, Morning Rehearsal" required>
                     </div>
 
                     <div class="form-grid">
                         <div class="form-field">
-                            <label for="event-input-date">Date *</label>
+                            <label for="event-input-date">Event Date *</label>
                             <input type="date" id="event-input-date" required>
                         </div>
                         <div class="form-field">
@@ -281,22 +294,22 @@
 
                     <div class="form-field">
                         <label for="event-input-venue">Venue / Location *</label>
-                        <input type="text" id="event-input-venue" placeholder="e.g. Grand Concert Hall, Studio B" required>
+                        <input type="text" id="event-input-venue" placeholder="e.g. Symphony Hall, Main Auditorium" required>
                     </div>
 
                     <div class="form-field">
-                        <label for="event-input-band">Assigned Ensemble Type *</label>
+                        <label for="event-input-band">Performing Ensemble *</label>
                         <select id="event-input-band" required>
-                            <option value="full">Full Band (Full Roster — Band 1 + Band 2)</option>
-                            <option value="band1">Band 1 Roster</option>
-                            <option value="band2">Band 2 Roster</option>
-                            <option value="custom">Custom Ensemble (Select Specific Musicians)</option>
+                            <option value="full">Full Band (Full Roster)</option>
+                            <option value="band1">Band 1 Only</option>
+                            <option value="band2">Band 2 Only</option>
+                            <option value="custom">Custom Ensemble (Select Musicians)</option>
                         </select>
                     </div>
 
                     <!-- Custom Roster Checklist Selector -->
                     <div id="custom-roster-group" class="custom-roster-section hidden">
-                        <div class="custom-roster-header">
+                        <div class="flex-between">
                             <label style="font-size: 11px; font-weight: 700; color: #c084fc;">
                                 <i data-lucide="users" style="width:13px; height:13px; display:inline; vertical-align:middle;"></i> Select Musicians Attending:
                             </label>
@@ -321,6 +334,22 @@
                         <label for="event-input-maestro">Designated Performance Maestro *</label>
                         <select id="event-input-maestro"></select>
                         <span class="field-hint">Select the maestro leading this performance.</span>
+                    </div>
+
+                    <!-- Event Coordinators Selection -->
+                    <div class="form-field">
+                        <div class="flex-between">
+                            <label style="font-size: 11px; font-weight: 700; color: #38bdf8;">
+                                <i data-lucide="shield-check" style="width:13px; height:13px; display:inline; vertical-align:middle;"></i> Designated Event Coordinator(s):
+                            </label>
+                            <span id="event-coordinators-count" class="badge" style="background: rgba(56,189,248,0.2); color:#7dd3fc;">0 selected</span>
+                        </div>
+                        <div class="search-bar-wrapper" style="margin-top: 2px;">
+                            <input type="text" id="event-coordinator-search" placeholder="Search coordinators / members..." style="padding: 6px 8px; font-size: 11.5px; border-radius: 6px;">
+                        </div>
+                        <div id="event-coordinator-items" class="custom-roster-list" style="max-height: 110px;">
+                            <!-- Populated with coordinator checkboxes dynamically -->
+                        </div>
                     </div>
 
                     <div class="modal-footer">
@@ -371,6 +400,11 @@
                     <div class="form-checkbox-row">
                         <input type="checkbox" id="musician-input-maestro">
                         <label for="musician-input-maestro">Register as Conductor / Maestro Candidate</label>
+                    </div>
+
+                    <div class="form-checkbox-row">
+                        <input type="checkbox" id="musician-input-coordinator">
+                        <label for="musician-input-coordinator">Register as Band Coordinator / Staff</label>
                     </div>
 
                     <div class="modal-footer">
