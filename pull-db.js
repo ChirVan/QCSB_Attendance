@@ -13,6 +13,7 @@ const MemberSchema = new mongoose.Schema({
     assignedBand: String,
     contact: String,
     isMaestro: Boolean,
+    isCoordinator: Boolean,
     isDeleted: Boolean
 }, { timestamps: true });
 
@@ -31,6 +32,7 @@ const EventSchema = new mongoose.Schema({
     ensembleType: String,
     customMemberIds: [String],
     maestroId: String,
+    coordinatorIds: [String],
     attendance: Object,
     careOfDetails: Object,
     status: String

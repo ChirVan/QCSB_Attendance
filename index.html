@@ -223,9 +223,12 @@
 
             <!-- Roster Sub-nav Tabs -->
             <div class="pill-nav">
-                <button class="pill-btn active" data-roster-filter="all">Full Band (Full Roster)</button>
+                <button class="pill-btn active" data-roster-filter="all">Full Band</button>
                 <button class="pill-btn" data-roster-filter="band1">Band 1</button>
                 <button class="pill-btn" data-roster-filter="band2">Band 2</button>
+                <button class="pill-btn" data-roster-filter="coordinators">
+                    <i data-lucide="shield-check" style="width:12px;height:12px;display:inline;vertical-align:middle;"></i> Coordinators
+                </button>
             </div>
 
             <!-- Roster Search & Sort -->
@@ -388,6 +391,7 @@
                                 <option value="band1">Band 1</option>
                                 <option value="band2">Band 2</option>
                                 <option value="both">Both (Band 1 & 2)</option>
+                                <option value="coordinator">Staff / Coordinator Only</option>
                             </select>
                         </div>
                     </div>

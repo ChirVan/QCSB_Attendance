@@ -702,11 +702,37 @@ function renderHistoryView() {
 // ----------------------------------------------------
 function renderRosterView() {
     const listContainer = document.getElementById('manage-musicians-list');
-    let filtered = state.members.filter(m => !m.isDeleted);
+    const activeMembers = state.members.filter(m => !m.isDeleted);
 
-    // Filter by Band tab
-    if (state.rosterFilter !== 'all') {
-        filtered = filtered.filter(m => m.assignedBand === state.rosterFilter || m.assignedBand === 'both');
+    // Compute live category counts
+    const fullBandCount = activeMembers.filter(m => !m.isCoordinator && m.assignedBand !== 'coordinator').length;
+    const band1Count = activeMembers.filter(m => !m.isCoordinator && m.assignedBand !== 'coordinator' && (m.assignedBand === 'band1' || m.assignedBand === 'both')).length;
+    const band2Count = activeMembers.filter(m => !m.isCoordinator && m.assignedBand !== 'coordinator' && (m.assignedBand === 'band2' || m.assignedBand === 'both')).length;
+    const coordCount = activeMembers.filter(m => m.isCoordinator || m.assignedBand === 'coordinator').length;
+
+    // Update pill tab button labels with counts
+    const pillAll = document.querySelector('.pill-btn[data-roster-filter="all"]');
+    const pillB1 = document.querySelector('.pill-btn[data-roster-filter="band1"]');
+    const pillB2 = document.querySelector('.pill-btn[data-roster-filter="band2"]');
+    const pillCoord = document.querySelector('.pill-btn[data-roster-filter="coordinators"]');
+
+    if (pillAll) pillAll.innerHTML = `Full Band <span style="opacity:0.8; font-size:10px;">(${fullBandCount})</span>`;
+    if (pillB1) pillB1.innerHTML = `Band 1 <span style="opacity:0.8; font-size:10px;">(${band1Count})</span>`;
+    if (pillB2) pillB2.innerHTML = `Band 2 <span style="opacity:0.8; font-size:10px;">(${band2Count})</span>`;
+    if (pillCoord) pillCoord.innerHTML = `<i data-lucide="shield-check" style="width:12px;height:12px;display:inline;vertical-align:middle;"></i> Coordinators <span style="opacity:0.8; font-size:10px;">(${coordCount})</span>`;
+
+    let filtered = [...activeMembers];
+
+    // Filter by Tab: Coordinators have their own dedicated tab and are separated from Full Band & Band 1/2
+    if (state.rosterFilter === 'coordinators') {
+        filtered = filtered.filter(m => m.isCoordinator || m.assignedBand === 'coordinator');
+    } else if (state.rosterFilter === 'band1') {
+        filtered = filtered.filter(m => !m.isCoordinator && m.assignedBand !== 'coordinator' && (m.assignedBand === 'band1' || m.assignedBand === 'both'));
+    } else if (state.rosterFilter === 'band2') {
+        filtered = filtered.filter(m => !m.isCoordinator && m.assignedBand !== 'coordinator' && (m.assignedBand === 'band2' || m.assignedBand === 'both'));
+    } else {
+        // 'all' / Full Band: Only playing musicians in Full Band, excluding Coordinators
+        filtered = filtered.filter(m => !m.isCoordinator && m.assignedBand !== 'coordinator');
     }
 
     // Filter by Search Query
@@ -732,7 +758,7 @@ function renderRosterView() {
     });
 
     if (filtered.length === 0) {
-        listContainer.innerHTML = `<p class="view-desc" style="text-align: center; padding: 20px 0;">No musicians found.</p>`;
+        listContainer.innerHTML = `<p class="view-desc" style="text-align: center; padding: 20px 0;">No members found in this section.</p>`;
         return;
     }
 
@@ -742,7 +768,7 @@ function renderRosterView() {
                 <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                     <span class="member-name">${escapeHtml(m.name)}</span>
                     ${m.isMaestro ? '<i data-lucide="crown" style="width:13px; height:13px; color:gold;" title="Conductor / Maestro"></i>' : ''}
-                    ${m.isCoordinator ? '<span class="badge-coordinator"><i data-lucide="shield-check" style="width:10px; height:10px;"></i> Coordinator</span>' : ''}
+                    ${(m.isCoordinator || m.assignedBand === 'coordinator') ? '<span class="badge-coordinator"><i data-lucide="shield-check" style="width:10px; height:10px;"></i> Coordinator</span>' : ''}
                 </div>
                 <div class="member-meta-tags">
                     <span class="section-tag">${escapeHtml(m.instrument)}</span>
@@ -752,10 +778,10 @@ function renderRosterView() {
                 </div>
             </div>
             <div class="crud-actions">
-                <button class="icon-action-btn" onclick="openEditMusicianModal('${m.id}')" title="Edit Musician">
+                <button class="icon-action-btn" onclick="openEditMusicianModal('${m.id}')" title="Edit Member">
                     <i data-lucide="edit-2"></i>
                 </button>
-                <button class="icon-action-btn delete-icon" onclick="deleteMusician('${m.id}')" title="Delete Musician">
+                <button class="icon-action-btn delete-icon" onclick="deleteMusician('${m.id}')" title="Delete Member">
                     <i data-lucide="trash-2"></i>
                 </button>
             </div>
@@ -941,6 +967,15 @@ function setupEventListeners() {
         renderRosterView();
         lucide.createIcons();
     });
+
+    const musicianBandSelect = document.getElementById('musician-input-band');
+    if (musicianBandSelect) {
+        musicianBandSelect.addEventListener('change', (e) => {
+            const isCoord = e.target.value === 'coordinator';
+            const coordCheckbox = document.getElementById('musician-input-coordinator');
+            if (isCoord && coordCheckbox) coordCheckbox.checked = true;
+        });
+    }
 
     const rosterSortSelect = document.getElementById('roster-sort-order');
     if (rosterSortSelect) {
@@ -1393,14 +1428,16 @@ function handleEventFormSubmit(e) {
 
 // Musician Form Handlers (Story 1 CRUD)
 function openNewMusicianModal() {
-    document.getElementById('modal-musician-title').textContent = 'Add New Musician';
+    document.getElementById('modal-musician-title').textContent = 'Add Member / Coordinator';
     document.getElementById('musician-form-id').value = '';
     document.getElementById('musician-input-name').value = '';
     document.getElementById('musician-input-instrument').value = '';
-    document.getElementById('musician-input-band').value = 'band1';
+    
+    const isCoordTab = state.rosterFilter === 'coordinators';
+    document.getElementById('musician-input-band').value = isCoordTab ? 'coordinator' : (state.rosterFilter === 'band2' ? 'band2' : 'band1');
     document.getElementById('musician-input-contact').value = '';
     document.getElementById('musician-input-maestro').checked = false;
-    document.getElementById('musician-input-coordinator').checked = false;
+    document.getElementById('musician-input-coordinator').checked = isCoordTab;
     openModal('modal-musician');
 }
 
@@ -1598,6 +1635,7 @@ function getBandLabel(band) {
         case 'band1': return 'Band 1';
         case 'band2': return 'Band 2';
         case 'both': return 'Band 1 & 2 (Full Band)';
+        case 'coordinator': return 'Staff / Coordinator';
         default: return band;
     }
 }

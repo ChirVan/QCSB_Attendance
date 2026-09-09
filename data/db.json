@@ -626,6 +626,18 @@
       "isDeleted": false,
       "createdAt": "2026-09-08T17:24:54.055Z",
       "updatedAt": "2026-09-08T17:24:54.055Z"
+    },
+    {
+      "id": "mem_1788948073569",
+      "name": "Bullo, Ivan Christopher",
+      "instrument": "Coordinator",
+      "assignedBand": "band1",
+      "contact": "",
+      "isMaestro": false,
+      "isCoordinator": true,
+      "isDeleted": false,
+      "createdAt": "2026-09-09T10:01:13.630Z",
+      "updatedAt": "2026-09-09T10:01:13.630Z"
     }
   ],
   "config": {
@@ -633,6 +645,39 @@
     "band2MaestroId": ""
   },
   "events": [
+    {
+      "id": "evt_1788944288109",
+      "title": "Music Appreciation Concert",
+      "date": "2026-09-02",
+      "callTime": "18:00",
+      "venue": "QMC",
+      "ensembleType": "custom",
+      "customMemberIds": [
+        "mem_1788887762424",
+        "mem_1788708824440",
+        "mem_1788887601563",
+        "mem_1788888032609",
+        "mem_1788888050406",
+        "mem_1788887199521",
+        "mem_1788887349305",
+        "mem_1788888294054"
+      ],
+      "maestroId": "mem_1788708824440",
+      "attendance": {
+        "mem_1788708824440": "present",
+        "mem_1788887349305": "present",
+        "mem_1788888050406": "present",
+        "mem_1788887601563": "present",
+        "mem_1788888294054": "present",
+        "mem_1788887762424": "present",
+        "mem_1788888032609": "present",
+        "mem_1788887199521": "present"
+      },
+      "careOfDetails": {},
+      "status": "completed",
+      "createdAt": "2026-09-09T08:58:08.197Z",
+      "updatedAt": "2026-09-09T09:37:39.129Z"
+    },
     {
       "id": "evt_1788888557366",
       "title": "Music Appreciation Concert",
@@ -645,7 +690,7 @@
       "careOfDetails": {},
       "status": "scheduled",
       "createdAt": "2026-09-08T17:29:17.366Z",
-      "updatedAt": "2026-09-08T17:29:17.366Z"
+      "updatedAt": "2026-09-09T09:05:33.728Z"
     }
   ]
 }
