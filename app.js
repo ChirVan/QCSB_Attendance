@@ -653,7 +653,8 @@ function setupEventListeners() {
     document.getElementById('btn-quick-new-event').addEventListener('click', () => openNewEventModal());
 
     // Mark All Present Shortcut
-    document.getElementById('btn-mark-all-present').addEventListener('click', () => {
+    const btnMarkAll = document.getElementById('btn-mark-all-present');
+    btnMarkAll.addEventListener('click', () => {
         const activeEvent = state.events.find(e => e.id === state.activeEventId);
         if (!activeEvent) return;
 
@@ -673,14 +674,26 @@ function setupEventListeners() {
         showToast('All roster members marked Present!');
     });
 
-    // Save Attendance Button
-    document.getElementById('btn-save-attendance').addEventListener('click', () => {
+    // Save Attendance Button with Tactile Feedback
+    const btnSaveAtt = document.getElementById('btn-save-attendance');
+    btnSaveAtt.addEventListener('click', () => {
         const activeEvent = state.events.find(e => e.id === state.activeEventId);
         if (activeEvent) {
+            btnSaveAtt.classList.add('btn-processing');
+            const origHtml = btnSaveAtt.innerHTML;
+            btnSaveAtt.innerHTML = `<i data-lucide="check" style="width:15px;height:15px;color:#34d399;"></i> <span>Saved!</span>`;
+            if (window.lucide) lucide.createIcons();
+
             activeEvent.status = 'completed';
             saveState();
             apiSaveAttendance(activeEvent);
             showToast('Event attendance successfully saved!');
+
+            setTimeout(() => {
+                btnSaveAtt.innerHTML = origHtml;
+                btnSaveAtt.classList.remove('btn-processing');
+                if (window.lucide) lucide.createIcons();
+            }, 1400);
         }
     });
 
@@ -781,12 +794,20 @@ function setupEventListeners() {
         });
     }
 
-    // Modal Close Buttons
+    // Modal Close Buttons with Smooth Animation
     document.querySelectorAll('.close-modal-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const modalId = e.currentTarget.getAttribute('data-close');
-            const targetModal = document.getElementById(modalId);
-            if (targetModal) targetModal.classList.add('hidden');
+            if (modalId) closeModal(modalId);
+        });
+    });
+
+    // Close Modal on Backdrop Click
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                closeModal(overlay.id);
+            }
         });
     });
 
@@ -828,7 +849,7 @@ function setupEventListeners() {
             const coveringName = customVal || selectVal;
 
             if (!coveringName) {
-                alert('Please select a colleague or enter a substitute name.');
+                showToast('Please select a colleague or enter a substitute name.', 'error');
                 return;
             }
 
@@ -844,7 +865,7 @@ function setupEventListeners() {
                 apiSaveAttendance(activeEvent);
                 renderActiveEventView();
                 lucide.createIcons();
-                document.getElementById('modal-careof').classList.add('hidden');
+                closeModal('modal-careof');
                 showToast(`Marked Care Of by ${coveringName}`);
             }
         });
@@ -864,7 +885,7 @@ function setupEventListeners() {
                 apiSaveAttendance(activeEvent);
                 renderActiveEventView();
                 lucide.createIcons();
-                document.getElementById('modal-careof').classList.add('hidden');
+                closeModal('modal-careof');
                 showToast('Care Of status removed.');
             }
         });
@@ -884,7 +905,7 @@ function openNewEventModal() {
     document.getElementById('event-input-band').value = 'band1';
     
     document.getElementById('full-band-maestro-group').classList.add('hidden');
-    document.getElementById('modal-event').classList.remove('hidden');
+    openModal('modal-event');
 }
 
 // Open and populate Event modal for editing
@@ -908,11 +929,14 @@ window.openEditEventModal = function(eventId) {
         fullMaestroGroup.classList.add('hidden');
     }
 
-    document.getElementById('modal-event').classList.remove('hidden');
+    openModal('modal-event');
 };
 
 function handleEventFormSubmit(e) {
     e.preventDefault();
+    const submitBtn = e.target.querySelector('.submit-btn');
+    if (submitBtn) submitBtn.classList.add('btn-processing');
+
     const id = document.getElementById('event-form-id').value;
     const title = document.getElementById('event-input-title').value.trim();
     const date = document.getElementById('event-input-date').value;
@@ -964,7 +988,8 @@ function handleEventFormSubmit(e) {
         showToast('New event scheduled!');
     }
 
-    document.getElementById('modal-event').classList.add('hidden');
+    closeModal('modal-event');
+    if (submitBtn) submitBtn.classList.remove('btn-processing');
     renderAll();
 }
 
@@ -977,7 +1002,7 @@ function openNewMusicianModal() {
     document.getElementById('musician-input-band').value = 'band1';
     document.getElementById('musician-input-contact').value = '';
     document.getElementById('musician-input-maestro').checked = false;
-    document.getElementById('modal-musician').classList.remove('hidden');
+    openModal('modal-musician');
 }
 
 window.openEditMusicianModal = function(memberId) {
@@ -991,11 +1016,14 @@ window.openEditMusicianModal = function(memberId) {
     document.getElementById('musician-input-band').value = mem.assignedBand;
     document.getElementById('musician-input-contact').value = mem.contact || '';
     document.getElementById('musician-input-maestro').checked = !!mem.isMaestro;
-    document.getElementById('modal-musician').classList.remove('hidden');
+    openModal('modal-musician');
 };
 
 function handleMusicianFormSubmit(e) {
     e.preventDefault();
+    const submitBtn = e.target.querySelector('.submit-btn');
+    if (submitBtn) submitBtn.classList.add('btn-processing');
+
     const id = document.getElementById('musician-form-id').value;
     const name = document.getElementById('musician-input-name').value.trim();
     const instrument = document.getElementById('musician-input-instrument').value.trim();
@@ -1031,7 +1059,8 @@ function handleMusicianFormSubmit(e) {
         showToast('New musician added to roster!');
     }
 
-    document.getElementById('modal-musician').classList.add('hidden');
+    closeModal('modal-musician');
+    if (submitBtn) submitBtn.classList.remove('btn-processing');
     renderAll();
 }
 
@@ -1144,7 +1173,7 @@ function getEnsembleLabel(type) {
     switch (type) {
         case 'band1': return 'Band 1';
         case 'band2': return 'Band 2';
-        case 'full': return 'Full Band';
+        case 'full': return 'Full Band (Full Roster)';
         default: return type;
     }
 }
@@ -1153,18 +1182,71 @@ function getBandLabel(band) {
     switch (band) {
         case 'band1': return 'Band 1';
         case 'band2': return 'Band 2';
-        case 'both': return 'Full / Both Bands';
+        case 'both': return 'Band 1 & 2 (Full Band)';
         default: return band;
     }
 }
 
-function showToast(message) {
+let toastTimeout = null;
+let toastHideTimeout = null;
+
+function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
-    toast.textContent = message;
+    if (!toast) return;
+
+    if (toastTimeout) {
+        clearTimeout(toastTimeout);
+        toastTimeout = null;
+    }
+    if (toastHideTimeout) {
+        clearTimeout(toastHideTimeout);
+        toastHideTimeout = null;
+    }
+
+    const iconHtml = type === 'error' 
+        ? '<i data-lucide="alert-circle" style="width:16px;height:16px;color:#f87171;flex-shrink:0;"></i>'
+        : '<i data-lucide="check-circle-2" style="width:16px;height:16px;color:#34d399;flex-shrink:0;"></i>';
+
+    toast.innerHTML = `${iconHtml}<span>${escapeHtml(message)}</span>`;
+    toast.className = `toast ${type === 'error' ? 'toast-error' : 'toast-success'}`;
     toast.classList.remove('hidden');
+
+    // Trigger reflow for smooth animation
+    void toast.offsetWidth;
+    toast.classList.add('show');
+
+    if (window.lucide && window.lucide.createIcons) {
+        window.lucide.createIcons();
+    }
+
+    // Keep visible for 3.2 seconds so users can comfortably read and process
+    toastTimeout = setTimeout(() => {
+        toast.classList.remove('show');
+        toastHideTimeout = setTimeout(() => {
+            if (!toast.classList.contains('show')) {
+                toast.classList.add('hidden');
+            }
+        }, 350);
+    }, 3200);
+}
+
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    void modal.offsetWidth; // Force CSS reflow
+    modal.classList.add('active');
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    modal.classList.remove('active');
     setTimeout(() => {
-        toast.classList.add('hidden');
-    }, 2800);
+        if (!modal.classList.contains('active')) {
+            modal.classList.add('hidden');
+        }
+    }, 300);
 }
 
 function escapeHtml(unsafe) {
@@ -1176,3 +1258,4 @@ function escapeHtml(unsafe) {
          .replace(/"/g, "&quot;")
          .replace(/'/g, "&#039;");
 }
+

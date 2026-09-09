@@ -34,7 +34,12 @@ A modern, mobile-first full-stack attendance monitoring system designed for band
    npm start
    ```
 
-4. Open in browser:
+4. **Pull latest Cloud Data to local `data/db.json`:**
+   ```bash
+   npm run pull-db
+   ```
+
+5. Open in browser:
    - **Local PC**: `http://localhost:3000`
    - **Mobile Devices (Same Wi-Fi)**: `http://<your-ip-address>:3000`
 
