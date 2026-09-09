@@ -44,7 +44,8 @@ const EventSchema = new mongoose.Schema({
     date: { type: String, required: true },
     callTime: { type: String, default: '18:00' },
     venue: { type: String, required: true },
-    ensembleType: { type: String, default: 'band1' },
+    ensembleType: { type: String, default: 'full' },
+    customMemberIds: { type: [String], default: [] },
     maestroId: { type: String, default: '' },
     attendance: { type: Object, default: {} },
     careOfDetails: { type: Object, default: {} },
@@ -298,7 +299,7 @@ app.get('/api/events', async (req, res) => {
 });
 
 app.post('/api/events', async (req, res) => {
-    const { title, date, callTime, venue, ensembleType, maestroId } = req.body;
+    const { title, date, callTime, venue, ensembleType, customMemberIds, maestroId } = req.body;
     if (!title || !date || !venue) {
         return res.status(400).json({ error: 'Title, date, and venue are required.' });
     }
@@ -309,7 +310,8 @@ app.post('/api/events', async (req, res) => {
         date,
         callTime: callTime || '18:00',
         venue: venue.trim(),
-        ensembleType: ensembleType || 'band1',
+        ensembleType: ensembleType || 'full',
+        customMemberIds: Array.isArray(customMemberIds) ? customMemberIds : [],
         maestroId: maestroId || '',
         attendance: {},
         careOfDetails: {},
@@ -355,6 +357,7 @@ app.put('/api/events/:id', async (req, res) => {
     if (updates.callTime !== undefined) evt.callTime = updates.callTime;
     if (updates.venue !== undefined) evt.venue = updates.venue.trim();
     if (updates.ensembleType !== undefined) evt.ensembleType = updates.ensembleType;
+    if (updates.customMemberIds !== undefined) evt.customMemberIds = Array.isArray(updates.customMemberIds) ? updates.customMemberIds : [];
     if (updates.maestroId !== undefined) evt.maestroId = updates.maestroId;
     if (updates.status !== undefined) evt.status = updates.status;
 

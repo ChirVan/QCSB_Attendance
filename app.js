@@ -373,10 +373,12 @@ function getEventRoster(event) {
             return m.assignedBand === 'band1' || m.assignedBand === 'both';
         } else if (event.ensembleType === 'band2') {
             return m.assignedBand === 'band2' || m.assignedBand === 'both';
+        } else if (event.ensembleType === 'custom') {
+            return Array.isArray(event.customMemberIds) && event.customMemberIds.includes(m.id);
         } else if (event.ensembleType === 'full') {
             return true;
         }
-        return false;
+        return true;
     });
 }
 
@@ -811,18 +813,64 @@ function setupEventListeners() {
         });
     });
 
-    // Ensemble type change in event modal (Conditional Designated Maestro for Full Band)
+    // Ensemble type change in event modal (Conditional Custom Roster and Maestro)
     const ensembleSelect = document.getElementById('event-input-band');
     if (ensembleSelect) {
         ensembleSelect.addEventListener('change', (e) => {
             const fullMaestroGroup = document.getElementById('full-band-maestro-group');
-            if (fullMaestroGroup) {
-                if (e.target.value === 'full') {
-                    fullMaestroGroup.classList.remove('hidden');
-                } else {
-                    fullMaestroGroup.classList.add('hidden');
-                }
+            const customRosterGroup = document.getElementById('custom-roster-group');
+            const val = e.target.value;
+
+            if (val === 'custom') {
+                if (customRosterGroup) customRosterGroup.classList.remove('hidden');
+                if (fullMaestroGroup) fullMaestroGroup.classList.remove('hidden');
+                renderCustomRosterChecklist(null);
+            } else if (val === 'full') {
+                if (customRosterGroup) customRosterGroup.classList.add('hidden');
+                if (fullMaestroGroup) fullMaestroGroup.classList.remove('hidden');
+            } else {
+                if (customRosterGroup) customRosterGroup.classList.add('hidden');
+                if (fullMaestroGroup) fullMaestroGroup.classList.add('hidden');
             }
+        });
+    }
+
+    // Custom Roster Quick Action Buttons
+    const btnSelectB1 = document.getElementById('btn-select-b1');
+    if (btnSelectB1) {
+        btnSelectB1.addEventListener('click', () => {
+            const b1Ids = state.members.filter(m => !m.isDeleted && (m.assignedBand === 'band1' || m.assignedBand === 'both')).map(m => m.id);
+            renderCustomRosterChecklist(b1Ids);
+        });
+    }
+
+    const btnSelectB2 = document.getElementById('btn-select-b2');
+    if (btnSelectB2) {
+        btnSelectB2.addEventListener('click', () => {
+            const b2Ids = state.members.filter(m => !m.isDeleted && (m.assignedBand === 'band2' || m.assignedBand === 'both')).map(m => m.id);
+            renderCustomRosterChecklist(b2Ids);
+        });
+    }
+
+    const btnSelectAllCustom = document.getElementById('btn-select-all-custom');
+    if (btnSelectAllCustom) {
+        btnSelectAllCustom.addEventListener('click', () => {
+            const allIds = state.members.filter(m => !m.isDeleted).map(m => m.id);
+            renderCustomRosterChecklist(allIds);
+        });
+    }
+
+    const btnClearCustom = document.getElementById('btn-clear-custom');
+    if (btnClearCustom) {
+        btnClearCustom.addEventListener('click', () => {
+            renderCustomRosterChecklist([]);
+        });
+    }
+
+    const customSearchInput = document.getElementById('custom-roster-search');
+    if (customSearchInput) {
+        customSearchInput.addEventListener('input', (e) => {
+            renderCustomRosterChecklist(null, e.target.value);
         });
     }
 
@@ -892,6 +940,60 @@ function setupEventListeners() {
     }
 }
 
+// Custom Roster Selection Helper
+let customRosterSelectedIds = new Set();
+
+function renderCustomRosterChecklist(selectedIds = null, filterText = '') {
+    if (selectedIds !== null) {
+        customRosterSelectedIds = new Set(selectedIds);
+    }
+
+    const container = document.getElementById('custom-roster-items');
+    const countBadge = document.getElementById('custom-roster-count');
+    if (!container) return;
+
+    const activeMembers = state.members.filter(m => !m.isDeleted);
+    let filtered = activeMembers;
+    if (filterText && filterText.trim()) {
+        const q = filterText.toLowerCase();
+        filtered = filtered.filter(m => m.name.toLowerCase().includes(q) || m.instrument.toLowerCase().includes(q));
+    }
+
+    filtered.sort((a, b) => a.name.localeCompare(b.name));
+
+    if (filtered.length === 0) {
+        container.innerHTML = `<p class="view-desc" style="text-align:center; padding: 10px 0;">No musicians found.</p>`;
+    } else {
+        container.innerHTML = filtered.map(m => {
+            const isChecked = customRosterSelectedIds.has(m.id);
+            return `
+                <label class="custom-member-item">
+                    <input type="checkbox" value="${m.id}" ${isChecked ? 'checked' : ''} onchange="toggleCustomMemberSelection('${m.id}', this.checked)">
+                    <span class="custom-mem-name">${escapeHtml(m.name)}</span>
+                    <span class="custom-mem-meta">${escapeHtml(m.instrument)} &bull; ${getBandLabel(m.assignedBand)}</span>
+                </label>
+            `;
+        }).join('');
+    }
+
+    if (countBadge) {
+        countBadge.textContent = `${customRosterSelectedIds.size} of ${activeMembers.length} selected`;
+    }
+}
+
+window.toggleCustomMemberSelection = function(memberId, isChecked) {
+    if (isChecked) {
+        customRosterSelectedIds.add(memberId);
+    } else {
+        customRosterSelectedIds.delete(memberId);
+    }
+    const countBadge = document.getElementById('custom-roster-count');
+    const activeMembers = state.members.filter(m => !m.isDeleted);
+    if (countBadge) {
+        countBadge.textContent = `${customRosterSelectedIds.size} of ${activeMembers.length} selected`;
+    }
+};
+
 // Open and populate Event modal for creation
 function openNewEventModal() {
     document.getElementById('modal-event-title').textContent = 'Schedule New Event';
@@ -902,9 +1004,12 @@ function openNewEventModal() {
     document.getElementById('event-input-date').value = today;
     document.getElementById('event-input-time').value = '18:00';
     document.getElementById('event-input-venue').value = '';
-    document.getElementById('event-input-band').value = 'band1';
+    document.getElementById('event-input-band').value = 'full';
     
-    document.getElementById('full-band-maestro-group').classList.add('hidden');
+    document.getElementById('custom-roster-search').value = '';
+    renderCustomRosterChecklist([]);
+    document.getElementById('custom-roster-group').classList.add('hidden');
+    document.getElementById('full-band-maestro-group').classList.remove('hidden');
     openModal('modal-event');
 }
 
@@ -919,14 +1024,28 @@ window.openEditEventModal = function(eventId) {
     document.getElementById('event-input-date').value = evt.date;
     document.getElementById('event-input-time').value = evt.callTime;
     document.getElementById('event-input-venue').value = evt.venue;
-    document.getElementById('event-input-band').value = evt.ensembleType;
+    document.getElementById('event-input-band').value = evt.ensembleType || 'full';
 
     const fullMaestroGroup = document.getElementById('full-band-maestro-group');
-    if (evt.ensembleType === 'full') {
-        fullMaestroGroup.classList.remove('hidden');
-        document.getElementById('event-input-maestro').value = evt.maestroId;
+    const customRosterGroup = document.getElementById('custom-roster-group');
+    document.getElementById('custom-roster-search').value = '';
+
+    if (evt.ensembleType === 'custom') {
+        if (customRosterGroup) customRosterGroup.classList.remove('hidden');
+        if (fullMaestroGroup) {
+            fullMaestroGroup.classList.remove('hidden');
+            document.getElementById('event-input-maestro').value = evt.maestroId || '';
+        }
+        renderCustomRosterChecklist(evt.customMemberIds || []);
+    } else if (evt.ensembleType === 'full') {
+        if (customRosterGroup) customRosterGroup.classList.add('hidden');
+        if (fullMaestroGroup) {
+            fullMaestroGroup.classList.remove('hidden');
+            document.getElementById('event-input-maestro').value = evt.maestroId || '';
+        }
     } else {
-        fullMaestroGroup.classList.add('hidden');
+        if (customRosterGroup) customRosterGroup.classList.add('hidden');
+        if (fullMaestroGroup) fullMaestroGroup.classList.add('hidden');
     }
 
     openModal('modal-event');
@@ -945,12 +1064,23 @@ function handleEventFormSubmit(e) {
     const ensembleType = document.getElementById('event-input-band').value;
 
     let maestroId = '';
+    let customMemberIds = [];
+
     if (ensembleType === 'band1') {
         maestroId = state.config.band1MaestroId;
     } else if (ensembleType === 'band2') {
         maestroId = state.config.band2MaestroId;
-    } else if (ensembleType === 'full') {
+    } else if (ensembleType === 'full' || ensembleType === 'custom') {
         maestroId = document.getElementById('event-input-maestro').value;
+    }
+
+    if (ensembleType === 'custom') {
+        customMemberIds = Array.from(customRosterSelectedIds);
+        if (customMemberIds.length === 0) {
+            showToast('Please select at least one musician for the custom ensemble.', 'error');
+            if (submitBtn) submitBtn.classList.remove('btn-processing');
+            return;
+        }
     }
 
     if (id) {
@@ -962,6 +1092,7 @@ function handleEventFormSubmit(e) {
             evt.callTime = callTime;
             evt.venue = venue;
             evt.ensembleType = ensembleType;
+            evt.customMemberIds = customMemberIds;
             evt.maestroId = maestroId;
             saveState();
             apiSaveEvent(evt, false);
@@ -976,6 +1107,7 @@ function handleEventFormSubmit(e) {
             callTime,
             venue,
             ensembleType,
+            customMemberIds,
             maestroId,
             attendance: {},
             careOfDetails: {},
@@ -1174,6 +1306,7 @@ function getEnsembleLabel(type) {
         case 'band1': return 'Band 1';
         case 'band2': return 'Band 2';
         case 'full': return 'Full Band (Full Roster)';
+        case 'custom': return 'Custom Ensemble';
         default: return type;
     }
 }

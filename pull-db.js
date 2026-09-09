@@ -29,6 +29,7 @@ const EventSchema = new mongoose.Schema({
     callTime: String,
     venue: String,
     ensembleType: String,
+    customMemberIds: [String],
     maestroId: String,
     attendance: Object,
     careOfDetails: Object,

@@ -286,6 +286,12 @@ select option {
     border: 1px solid rgba(245, 158, 11, 0.4);
 }
 
+.badge-custom {
+    background: rgba(168, 85, 247, 0.18);
+    color: #c084fc;
+    border: 1px solid rgba(168, 85, 247, 0.4);
+}
+
 .event-meta-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1094,6 +1100,93 @@ select option {
 .field-hint {
     font-size: 10px;
     color: #fbbf24;
+}
+
+/* Custom Roster Selection Checklist inside Event Modal */
+.custom-roster-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.custom-roster-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.custom-roster-tools {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.micro-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-color);
+    color: var(--color-text-muted);
+    font-family: var(--font-sans);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 7px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.micro-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.custom-roster-list {
+    max-height: 180px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-right: 2px;
+}
+
+.custom-member-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.03);
+    cursor: pointer;
+    font-size: 11.5px;
+    transition: background 0.15s ease;
+    user-select: none;
+}
+
+.custom-member-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.custom-member-item input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    accent-color: #6366f1;
+    cursor: pointer;
+}
+
+.custom-member-item .custom-mem-name {
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.custom-member-item .custom-mem-meta {
+    font-size: 10.5px;
+    color: var(--color-text-muted);
+    margin-left: auto;
 }
 
 .modal-footer {

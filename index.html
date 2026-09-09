@@ -137,9 +137,10 @@
                     <label><i data-lucide="filter"></i> Band Type</label>
                     <select id="filter-band-type">
                         <option value="all">All Ensembles</option>
+                        <option value="full">Full Band (Full Roster)</option>
                         <option value="band1">Band 1</option>
                         <option value="band2">Band 2</option>
-                        <option value="full">Full Band</option>
+                        <option value="custom">Custom Ensemble</option>
                     </select>
                 </div>
                 <div class="filter-group">
@@ -278,14 +279,37 @@
                             <option value="full">Full Band (Full Roster — Band 1 + Band 2)</option>
                             <option value="band1">Band 1 Roster</option>
                             <option value="band2">Band 2 Roster</option>
+                            <option value="custom">Custom Ensemble (Select Specific Musicians)</option>
                         </select>
                     </div>
 
-                    <!-- Designated Maestro (Required if Full Band) -->
+                    <!-- Custom Roster Checklist Selector -->
+                    <div id="custom-roster-group" class="custom-roster-section hidden">
+                        <div class="custom-roster-header">
+                            <label style="font-size: 11px; font-weight: 700; color: #c084fc;">
+                                <i data-lucide="users" style="width:13px; height:13px; display:inline; vertical-align:middle;"></i> Select Musicians Attending:
+                            </label>
+                            <span id="custom-roster-count" class="badge" style="background: rgba(168,85,247,0.25); color:#e9d5ff;">0 selected</span>
+                        </div>
+                        <div class="custom-roster-tools">
+                            <button type="button" class="micro-btn" id="btn-select-b1">Band 1</button>
+                            <button type="button" class="micro-btn" id="btn-select-b2">Band 2</button>
+                            <button type="button" class="micro-btn" id="btn-select-all-custom">All</button>
+                            <button type="button" class="micro-btn" id="btn-clear-custom">Clear</button>
+                        </div>
+                        <div class="search-bar-wrapper" style="margin-top: 2px;">
+                            <input type="text" id="custom-roster-search" placeholder="Search roster to check/uncheck..." style="padding: 6px 8px; font-size: 11.5px; border-radius: 6px;">
+                        </div>
+                        <div id="custom-roster-items" class="custom-roster-list">
+                            <!-- Populated with musician checkboxes dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Designated Maestro (Required if Full Band or Custom) -->
                     <div id="full-band-maestro-group" class="form-field hidden">
                         <label for="event-input-maestro">Designated Performance Maestro *</label>
                         <select id="event-input-maestro"></select>
-                        <span class="field-hint">Select the maestro leading this Full Band performance.</span>
+                        <span class="field-hint">Select the maestro leading this performance.</span>
                     </div>
 
                     <div class="modal-footer">
