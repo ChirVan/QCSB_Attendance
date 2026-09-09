@@ -22,6 +22,7 @@ let state = {
     attendanceSearch: '',
     attendanceSort: 'name-asc',
     rosterSort: 'name-asc',
+    isAttendanceEditing: false,
     historyFilters: {
         bandType: 'all',
         maestro: 'all',
@@ -246,37 +247,110 @@ function renderActiveEventView() {
         </div>
     `;
 
+    // Update Mode Status Bar & Controls
+    const isEditing = !!state.isAttendanceEditing;
+    const modeBadge = document.getElementById('attendance-mode-badge');
+    const toggleEditBtn = document.getElementById('btn-toggle-edit-mode');
+    const markAllBtn = document.getElementById('btn-mark-all-present');
+    const saveBtn = document.getElementById('btn-save-attendance');
+
+    if (modeBadge) {
+        if (isEditing) {
+            modeBadge.innerHTML = `<i data-lucide="unlock" style="width:11px; height:11px; color:#a5b4fc;"></i> <span style="color:#c7d2fe;">Roll Call Active (Editing)</span>`;
+            modeBadge.style.background = 'rgba(99, 102, 241, 0.2)';
+            modeBadge.style.borderColor = 'rgba(99, 102, 241, 0.4)';
+        } else {
+            modeBadge.innerHTML = `<i data-lucide="lock" style="width:11px; height:11px;"></i> Read-Only View`;
+            modeBadge.style.background = 'rgba(255, 255, 255, 0.06)';
+            modeBadge.style.borderColor = 'transparent';
+        }
+    }
+
+    if (toggleEditBtn) {
+        if (isEditing) {
+            toggleEditBtn.innerHTML = `<i data-lucide="check" style="width:13px; height:13px;"></i> <span>Done Editing</span>`;
+            toggleEditBtn.style.background = 'rgba(16, 185, 129, 0.2)';
+            toggleEditBtn.style.border = '1px solid rgba(16, 185, 129, 0.4)';
+            toggleEditBtn.style.color = '#34d399';
+        } else {
+            toggleEditBtn.innerHTML = `<i data-lucide="edit-3" style="width:13px; height:13px;"></i> <span>Edit Attendance</span>`;
+            toggleEditBtn.style.background = 'var(--primary-grad)';
+            toggleEditBtn.style.border = 'none';
+            toggleEditBtn.style.color = '#ffffff';
+        }
+    }
+
+    if (markAllBtn) {
+        if (isEditing) markAllBtn.classList.remove('hidden');
+        else markAllBtn.classList.add('hidden');
+    }
+
+    if (saveBtn) {
+        if (isEditing) {
+            saveBtn.innerHTML = `<i data-lucide="save" style="width:15px; height:15px;"></i> <span>Done & Save Attendance</span>`;
+        } else {
+            saveBtn.innerHTML = `<i data-lucide="edit-3" style="width:15px; height:15px;"></i> <span>Take Roll Call / Edit</span>`;
+        }
+    }
+
     // Compute Active Roster for this Event
     const assignedMembers = getEventRoster(activeEvent);
     countBadge.textContent = assignedMembers.length;
+
+    // Helper for Read-Only Status Badge
+    function getStatusBadge(status, coveredBy) {
+        if (status === 'present') {
+            return `<span class="read-status-badge present"><i data-lucide="check-circle-2"></i> Present</span>`;
+        } else if (status === 'absent') {
+            return `<span class="read-status-badge absent"><i data-lucide="x-circle"></i> Absent</span>`;
+        } else if (status === 'leave') {
+            return `<span class="read-status-badge leave"><i data-lucide="clock-4"></i> On Leave</span>`;
+        } else if (status === 'careof') {
+            return `<span class="read-status-badge careof"><i data-lucide="refresh-cw"></i> C/O: ${escapeHtml(coveredBy || 'Covered')}</span>`;
+        }
+        return `<span class="read-status-badge unmarked"><i data-lucide="circle-dashed"></i> Unmarked</span>`;
+    }
 
     // Maestro Row
     if (maestroObj) {
         const maestroStatus = activeEvent.attendance[maestroObj.id] || '';
         const coveredBy = (activeEvent.careOfDetails && activeEvent.careOfDetails[maestroObj.id]) || '';
-        maestroCard.innerHTML = `
-            <div class="member-info-row">
-                <div class="member-name-tag">
-                    <span class="member-name">${escapeHtml(maestroObj.name)}</span>
-                    <span class="member-sub"><i data-lucide="crown" style="width:12px; height:12px; color:gold; display:inline;"></i> Conductor / Maestro</span>
-                    ${maestroStatus === 'careof' ? `<span class="careof-badge" style="cursor:pointer;" onclick="handleCareOfClick('${activeEvent.id}', '${maestroObj.id}')"><i data-lucide="refresh-cw" style="width:11px; height:11px;"></i> C/O: ${escapeHtml(coveredBy)} (Edit)</span>` : ''}
+
+        if (isEditing) {
+            maestroCard.innerHTML = `
+                <div class="member-info-row">
+                    <div class="member-name-tag">
+                        <span class="member-name">${escapeHtml(maestroObj.name)}</span>
+                        <span class="member-sub"><i data-lucide="crown" style="width:12px; height:12px; color:gold; display:inline;"></i> Conductor / Maestro</span>
+                        ${maestroStatus === 'careof' ? `<span class="careof-badge" style="cursor:pointer;" onclick="handleCareOfClick('${activeEvent.id}', '${maestroObj.id}')"><i data-lucide="refresh-cw" style="width:11px; height:11px;"></i> C/O: ${escapeHtml(coveredBy)} (Edit)</span>` : ''}
+                    </div>
                 </div>
-            </div>
-            <div class="attendance-actions">
-                <button class="att-btn present ${maestroStatus === 'present' ? 'active' : ''}" onclick="setAttendanceStatus('${activeEvent.id}', '${maestroObj.id}', 'present')">
-                    <i data-lucide="check-circle-2"></i> Present
-                </button>
-                <button class="att-btn absent ${maestroStatus === 'absent' ? 'active' : ''}" onclick="setAttendanceStatus('${activeEvent.id}', '${maestroObj.id}', 'absent')">
-                    <i data-lucide="x-circle"></i> Absent
-                </button>
-                <button class="att-btn leave ${maestroStatus === 'leave' ? 'active' : ''}" onclick="setAttendanceStatus('${activeEvent.id}', '${maestroObj.id}', 'leave')">
-                    <i data-lucide="clock-4"></i> Leave
-                </button>
-                <button class="att-btn careof ${maestroStatus === 'careof' ? 'active' : ''}" onclick="handleCareOfClick('${activeEvent.id}', '${maestroObj.id}')">
-                    <i data-lucide="refresh-cw"></i> C/O
-                </button>
-            </div>
-        `;
+                <div class="attendance-actions">
+                    <button class="att-btn present ${maestroStatus === 'present' ? 'active' : ''}" onclick="setAttendanceStatus('${activeEvent.id}', '${maestroObj.id}', 'present')">
+                        <i data-lucide="check-circle-2"></i> Present
+                    </button>
+                    <button class="att-btn absent ${maestroStatus === 'absent' ? 'active' : ''}" onclick="setAttendanceStatus('${activeEvent.id}', '${maestroObj.id}', 'absent')">
+                        <i data-lucide="x-circle"></i> Absent
+                    </button>
+                    <button class="att-btn leave ${maestroStatus === 'leave' ? 'active' : ''}" onclick="setAttendanceStatus('${activeEvent.id}', '${maestroObj.id}', 'leave')">
+                        <i data-lucide="clock-4"></i> Leave
+                    </button>
+                    <button class="att-btn careof ${maestroStatus === 'careof' ? 'active' : ''}" onclick="handleCareOfClick('${activeEvent.id}', '${maestroObj.id}')">
+                        <i data-lucide="refresh-cw"></i> C/O
+                    </button>
+                </div>
+            `;
+        } else {
+            maestroCard.innerHTML = `
+                <div class="member-info-row" style="align-items: center;">
+                    <div class="member-name-tag">
+                        <span class="member-name">${escapeHtml(maestroObj.name)}</span>
+                        <span class="member-sub"><i data-lucide="crown" style="width:12px; height:12px; color:gold; display:inline;"></i> Conductor / Maestro</span>
+                    </div>
+                    ${getStatusBadge(maestroStatus, coveredBy)}
+                </div>
+            `;
+        }
     } else {
         maestroCard.innerHTML = `<p class="view-desc">No designated maestro for this event.</p>`;
     }
@@ -306,31 +380,46 @@ function renderActiveEventView() {
         rosterList.innerHTML = filteredRoster.map(m => {
             const status = activeEvent.attendance[m.id] || '';
             const coveredBy = (activeEvent.careOfDetails && activeEvent.careOfDetails[m.id]) || '';
-            return `
-                <div class="roster-card">
-                    <div class="member-info-row">
-                        <div class="member-name-tag">
-                            <span class="member-name">${escapeHtml(m.name)}</span>
-                            <span class="member-sub">${escapeHtml(m.instrument)} &bull; ${getBandLabel(m.assignedBand)}</span>
-                            ${status === 'careof' ? `<span class="careof-badge" style="cursor:pointer;" onclick="handleCareOfClick('${activeEvent.id}', '${m.id}')"><i data-lucide="refresh-cw" style="width:11px; height:11px;"></i> C/O: ${escapeHtml(coveredBy)} (Edit)</span>` : ''}
+
+            if (isEditing) {
+                return `
+                    <div class="roster-card">
+                        <div class="member-info-row">
+                            <div class="member-name-tag">
+                                <span class="member-name">${escapeHtml(m.name)}</span>
+                                <span class="member-sub">${escapeHtml(m.instrument)} &bull; ${getBandLabel(m.assignedBand)}</span>
+                                ${status === 'careof' ? `<span class="careof-badge" style="cursor:pointer;" onclick="handleCareOfClick('${activeEvent.id}', '${m.id}')"><i data-lucide="refresh-cw" style="width:11px; height:11px;"></i> C/O: ${escapeHtml(coveredBy)} (Edit)</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="attendance-actions">
+                            <button class="att-btn present ${status === 'present' ? 'active' : ''}" onclick="setAttendanceStatus('${activeEvent.id}', '${m.id}', 'present')">
+                                <i data-lucide="check-circle-2"></i> Present
+                            </button>
+                            <button class="att-btn absent ${status === 'absent' ? 'active' : ''}" onclick="setAttendanceStatus('${activeEvent.id}', '${m.id}', 'absent')">
+                                <i data-lucide="x-circle"></i> Absent
+                            </button>
+                            <button class="att-btn leave ${status === 'leave' ? 'active' : ''}" onclick="setAttendanceStatus('${activeEvent.id}', '${m.id}', 'leave')">
+                                <i data-lucide="clock-4"></i> Leave
+                            </button>
+                            <button class="att-btn careof ${status === 'careof' ? 'active' : ''}" onclick="handleCareOfClick('${activeEvent.id}', '${m.id}')">
+                                <i data-lucide="refresh-cw"></i> C/O
+                            </button>
                         </div>
                     </div>
-                    <div class="attendance-actions">
-                        <button class="att-btn present ${status === 'present' ? 'active' : ''}" onclick="setAttendanceStatus('${activeEvent.id}', '${m.id}', 'present')">
-                            <i data-lucide="check-circle-2"></i> Present
-                        </button>
-                        <button class="att-btn absent ${status === 'absent' ? 'active' : ''}" onclick="setAttendanceStatus('${activeEvent.id}', '${m.id}', 'absent')">
-                            <i data-lucide="x-circle"></i> Absent
-                        </button>
-                        <button class="att-btn leave ${status === 'leave' ? 'active' : ''}" onclick="setAttendanceStatus('${activeEvent.id}', '${m.id}', 'leave')">
-                            <i data-lucide="clock-4"></i> Leave
-                        </button>
-                        <button class="att-btn careof ${status === 'careof' ? 'active' : ''}" onclick="handleCareOfClick('${activeEvent.id}', '${m.id}')">
-                            <i data-lucide="refresh-cw"></i> C/O
-                        </button>
+                `;
+            } else {
+                return `
+                    <div class="roster-card">
+                        <div class="member-info-row" style="align-items: center;">
+                            <div class="member-name-tag">
+                                <span class="member-name">${escapeHtml(m.name)}</span>
+                                <span class="member-sub">${escapeHtml(m.instrument)} &bull; ${getBandLabel(m.assignedBand)}</span>
+                            </div>
+                            ${getStatusBadge(status, coveredBy)}
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            }
         }).join('');
     }
 
@@ -646,8 +735,24 @@ function setupEventListeners() {
     if (activeEventSelect) {
         activeEventSelect.addEventListener('change', (e) => {
             state.activeEventId = e.target.value;
+            state.isAttendanceEditing = false; // Always default to read-only when switching events
             renderActiveEventView();
             lucide.createIcons();
+        });
+    }
+
+    // Toggle Edit / Roll-Call Mode Button
+    const btnToggleEdit = document.getElementById('btn-toggle-edit-mode');
+    if (btnToggleEdit) {
+        btnToggleEdit.addEventListener('click', () => {
+            state.isAttendanceEditing = !state.isAttendanceEditing;
+            renderActiveEventView();
+            lucide.createIcons();
+            if (state.isAttendanceEditing) {
+                showToast('Roll Call mode enabled. You can now tap attendance buttons.');
+            } else {
+                showToast('Switched to Read-Only view.');
+            }
         });
     }
 
@@ -676,27 +781,37 @@ function setupEventListeners() {
         showToast('All roster members marked Present!');
     });
 
-    // Save Attendance Button with Tactile Feedback
+    // Save Attendance / Take Roll Call Action Button
     const btnSaveAtt = document.getElementById('btn-save-attendance');
     btnSaveAtt.addEventListener('click', () => {
         const activeEvent = state.events.find(e => e.id === state.activeEventId);
-        if (activeEvent) {
-            btnSaveAtt.classList.add('btn-processing');
-            const origHtml = btnSaveAtt.innerHTML;
-            btnSaveAtt.innerHTML = `<i data-lucide="check" style="width:15px;height:15px;color:#34d399;"></i> <span>Saved!</span>`;
-            if (window.lucide) lucide.createIcons();
+        if (!activeEvent) return;
 
-            activeEvent.status = 'completed';
-            saveState();
-            apiSaveAttendance(activeEvent);
-            showToast('Event attendance successfully saved!');
-
-            setTimeout(() => {
-                btnSaveAtt.innerHTML = origHtml;
-                btnSaveAtt.classList.remove('btn-processing');
-                if (window.lucide) lucide.createIcons();
-            }, 1400);
+        if (!state.isAttendanceEditing) {
+            // If in Read-Only view, clicking button enters editing mode
+            state.isAttendanceEditing = true;
+            renderActiveEventView();
+            lucide.createIcons();
+            showToast('Roll Call mode enabled. You can now tap attendance buttons.');
+            return;
         }
+
+        // If in Editing mode, save changes and return to Read-Only view
+        btnSaveAtt.classList.add('btn-processing');
+        btnSaveAtt.innerHTML = `<i data-lucide="check" style="width:15px;height:15px;color:#34d399;"></i> <span>Saved!</span>`;
+        if (window.lucide) lucide.createIcons();
+
+        activeEvent.status = 'completed';
+        state.isAttendanceEditing = false; // Return to Read-Only mode after saving
+        saveState();
+        apiSaveAttendance(activeEvent);
+        showToast('Event attendance successfully saved!');
+
+        setTimeout(() => {
+            renderActiveEventView();
+            btnSaveAtt.classList.remove('btn-processing');
+            if (window.lucide) lucide.createIcons();
+        }, 1200);
     });
 
     // Share / Copy Report Button
@@ -1200,6 +1315,7 @@ function handleMusicianFormSubmit(e) {
 window.openEventAttendance = function(eventId) {
     state.activeEventId = eventId;
     state.currentTab = 'view-events';
+    state.isAttendanceEditing = false; // Always open in clean Read-Only view
 
     document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
     document.querySelector('.nav-item[data-target="view-events"]').classList.add('active');

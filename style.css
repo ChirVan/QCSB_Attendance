@@ -530,6 +530,89 @@ select option {
     border-color: var(--color-careof-border);
 }
 
+/* Read-Only Status Badges */
+.read-status-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 5px 10px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    border: 1px solid transparent;
+}
+
+.read-status-badge i {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+}
+
+.read-status-badge.present {
+    background: var(--color-present-bg);
+    color: #34d399;
+    border-color: var(--color-present-border);
+}
+
+.read-status-badge.absent {
+    background: var(--color-absent-bg);
+    color: #fb7185;
+    border-color: var(--color-absent-border);
+}
+
+.read-status-badge.leave {
+    background: var(--color-leave-bg);
+    color: #7dd3fc;
+    border-color: var(--color-leave-border);
+}
+
+.read-status-badge.careof {
+    background: var(--color-careof-bg);
+    color: #f0abfc;
+    border-color: var(--color-careof-border);
+}
+
+.read-status-badge.unmarked {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color-text-sub);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Edit Mode Banner */
+.edit-mode-banner {
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    border-radius: 10px;
+    padding: 8px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #c7d2fe;
+    animation: pulseBorder 2s infinite ease-in-out;
+}
+
+@keyframes pulseBorder {
+    0%, 100% { border-color: rgba(99, 102, 241, 0.4); }
+    50% { border-color: rgba(99, 102, 241, 0.8); }
+}
+
+.view-mode-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--color-text-sub);
+    background: rgba(255, 255, 255, 0.06);
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
 /* Search & Sort Toolbar */
 .search-sort-row {
     display: flex;

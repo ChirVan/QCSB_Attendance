@@ -69,6 +69,17 @@
                 </div>
             </section>
 
+            <!-- Mode Status & Mode Switcher Bar -->
+            <div id="attendance-mode-banner" style="display: flex; justify-content: space-between; align-items: center; margin-top: -2px;">
+                <span id="attendance-mode-badge" class="view-mode-badge">
+                    <i data-lucide="lock" style="width:11px; height:11px;"></i> Read-Only View
+                </span>
+                <button id="btn-toggle-edit-mode" class="primary-icon-btn" style="padding: 5px 10px; font-size: 11.5px;">
+                    <i data-lucide="edit-3" style="width:13px; height:13px;"></i>
+                    <span id="btn-toggle-edit-text">Edit Attendance</span>
+                </button>
+            </div>
+
             <!-- Maestro Section -->
             <div class="section-container">
                 <div class="section-title">
@@ -88,7 +99,7 @@
                         <span>Ensemble Roster</span>
                         <span id="roster-count-badge" class="badge">0</span>
                     </div>
-                    <button id="btn-mark-all-present" class="text-btn">Mark All Present</button>
+                    <button id="btn-mark-all-present" class="text-btn hidden">Mark All Present</button>
                 </div>
 
                 <div class="search-sort-row">
@@ -107,7 +118,7 @@
                 </div>
 
                 <div id="attendance-roster-list" class="roster-list">
-                    <!-- Dynamic attendance list with Present, Absent, On Leave buttons -->
+                    <!-- Dynamic attendance list (Read-only badges or Edit mode buttons) -->
                 </div>
             </div>
 
@@ -115,7 +126,7 @@
             <div class="event-action-bar">
                 <button id="btn-save-attendance" class="action-btn save-btn">
                     <i data-lucide="save"></i>
-                    <span>Save Attendance</span>
+                    <span id="btn-save-text">Save Attendance</span>
                 </button>
                 <button id="btn-copy-report" class="action-btn share-btn">
                     <i data-lucide="share-2"></i>
