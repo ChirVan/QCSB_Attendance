@@ -632,6 +632,8 @@ function getEventRoster(event) {
             return m.assignedBand === 'band1' || m.assignedBand === 'both';
         } else if (event.ensembleType === 'band2') {
             return m.assignedBand === 'band2' || m.assignedBand === 'both';
+        } else if (event.ensembleType === 'men_of_songs') {
+            return m.assignedBand === 'men_of_songs';
         } else if (event.ensembleType === 'custom') {
             return Array.isArray(event.customMemberIds) && event.customMemberIds.includes(m.id);
         } else if (event.ensembleType === 'full') {
@@ -812,28 +814,33 @@ function renderRosterView() {
     const fullBandCount = activeMembers.filter(m => !m.isCoordinator && m.assignedBand !== 'coordinator').length;
     const band1Count = activeMembers.filter(m => !m.isCoordinator && m.assignedBand !== 'coordinator' && (m.assignedBand === 'band1' || m.assignedBand === 'both')).length;
     const band2Count = activeMembers.filter(m => !m.isCoordinator && m.assignedBand !== 'coordinator' && (m.assignedBand === 'band2' || m.assignedBand === 'both')).length;
+    const mosCount = activeMembers.filter(m => !m.isCoordinator && m.assignedBand === 'men_of_songs').length;
     const coordCount = activeMembers.filter(m => m.isCoordinator || m.assignedBand === 'coordinator').length;
 
     // Update pill tab button labels with counts
     const pillAll = document.querySelector('.pill-btn[data-roster-filter="all"]');
     const pillB1 = document.querySelector('.pill-btn[data-roster-filter="band1"]');
     const pillB2 = document.querySelector('.pill-btn[data-roster-filter="band2"]');
+    const pillMos = document.querySelector('.pill-btn[data-roster-filter="men_of_songs"]');
     const pillCoord = document.querySelector('.pill-btn[data-roster-filter="coordinators"]');
 
     if (pillAll) pillAll.innerHTML = `Full Band <span style="opacity:0.8; font-size:10px;">(${fullBandCount})</span>`;
     if (pillB1) pillB1.innerHTML = `Band 1 <span style="opacity:0.8; font-size:10px;">(${band1Count})</span>`;
     if (pillB2) pillB2.innerHTML = `Band 2 <span style="opacity:0.8; font-size:10px;">(${band2Count})</span>`;
+    if (pillMos) pillMos.innerHTML = `Men of Songs <span style="opacity:0.8; font-size:10px;">(${mosCount})</span>`;
     if (pillCoord) pillCoord.innerHTML = `<i data-lucide="shield-check" style="width:12px;height:12px;display:inline;vertical-align:middle;"></i> Coordinators <span style="opacity:0.8; font-size:10px;">(${coordCount})</span>`;
 
     let filtered = [...activeMembers];
 
-    // Filter by Tab: Coordinators have their own dedicated tab and are separated from Full Band & Band 1/2
+    // Filter by Tab: Coordinators & Men of Songs have their own dedicated tabs
     if (state.rosterFilter === 'coordinators') {
         filtered = filtered.filter(m => m.isCoordinator || m.assignedBand === 'coordinator');
     } else if (state.rosterFilter === 'band1') {
         filtered = filtered.filter(m => !m.isCoordinator && m.assignedBand !== 'coordinator' && (m.assignedBand === 'band1' || m.assignedBand === 'both'));
     } else if (state.rosterFilter === 'band2') {
         filtered = filtered.filter(m => !m.isCoordinator && m.assignedBand !== 'coordinator' && (m.assignedBand === 'band2' || m.assignedBand === 'both'));
+    } else if (state.rosterFilter === 'men_of_songs') {
+        filtered = filtered.filter(m => !m.isCoordinator && m.assignedBand === 'men_of_songs');
     } else {
         // 'all' / Full Band: Only playing musicians in Full Band, excluding Coordinators
         filtered = filtered.filter(m => !m.isCoordinator && m.assignedBand !== 'coordinator');
@@ -1205,6 +1212,14 @@ function setupEventListeners() {
         });
     }
 
+    const btnSelectMos = document.getElementById('btn-select-mos');
+    if (btnSelectMos) {
+        btnSelectMos.addEventListener('click', () => {
+            const mosIds = state.members.filter(m => !m.isDeleted && m.assignedBand === 'men_of_songs').map(m => m.id);
+            renderCustomRosterChecklist(mosIds);
+        });
+    }
+
     const btnSelectAllCustom = document.getElementById('btn-select-all-custom');
     if (btnSelectAllCustom) {
         btnSelectAllCustom.addEventListener('click', () => {
@@ -1563,7 +1578,11 @@ function openNewMusicianModal() {
     document.getElementById('musician-input-instrument').value = '';
     
     const isCoordTab = state.rosterFilter === 'coordinators';
-    document.getElementById('musician-input-band').value = isCoordTab ? 'coordinator' : (state.rosterFilter === 'band2' ? 'band2' : 'band1');
+    let defaultBand = 'band1';
+    if (isCoordTab) defaultBand = 'coordinator';
+    else if (state.rosterFilter === 'band2') defaultBand = 'band2';
+    else if (state.rosterFilter === 'men_of_songs') defaultBand = 'men_of_songs';
+    document.getElementById('musician-input-band').value = defaultBand;
     document.getElementById('musician-input-contact').value = '';
     document.getElementById('musician-input-maestro').checked = false;
     document.getElementById('musician-input-coordinator').checked = isCoordTab;
@@ -1771,6 +1790,7 @@ function getEnsembleLabel(type) {
     switch (type) {
         case 'band1': return 'Band 1';
         case 'band2': return 'Band 2';
+        case 'men_of_songs': return 'Men of Songs';
         case 'full': return 'Full Band (Full Roster)';
         case 'custom': return 'Custom Ensemble';
         default: return type;
@@ -1782,6 +1802,7 @@ function getBandLabel(band) {
         case 'band1': return 'Band 1';
         case 'band2': return 'Band 2';
         case 'both': return 'Band 1 & 2 (Full Band)';
+        case 'men_of_songs': return 'Men of Songs';
         case 'coordinator': return 'Staff / Coordinator';
         default: return band;
     }

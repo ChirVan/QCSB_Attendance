@@ -400,6 +400,12 @@ select option {
     border: 1px solid rgba(168, 85, 247, 0.4);
 }
 
+.badge-men_of_songs {
+    background: rgba(234, 179, 8, 0.18);
+    color: #facc15;
+    border: 1px solid rgba(234, 179, 8, 0.4);
+}
+
 .event-meta-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
