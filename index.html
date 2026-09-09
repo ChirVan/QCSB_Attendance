@@ -35,115 +35,144 @@
 
         <!-- VIEW 1: Active Event & Live Attendance -->
         <main id="view-events" class="tab-view active">
-            <!-- Event Selector & Info Card -->
-            <div class="event-selector-bar">
-                <label for="active-event-select" class="selector-label"><i data-lucide="calendar"></i> Select Event:</label>
-                <select id="active-event-select" class="event-dropdown"></select>
-            </div>
-
-            <div id="active-event-card" class="event-hero-card">
-                <!-- Dynamically injected event hero info -->
-            </div>
-
-            <!-- Stats Overview Banner -->
-            <section class="stats-overview">
-                <div class="stat-card present-stat">
-                    <span class="stat-num" id="stat-present">0</span>
-                    <span class="stat-label">Present</span>
-                </div>
-                <div class="stat-card absent-stat">
-                    <span class="stat-num" id="stat-absent">0</span>
-                    <span class="stat-label">Absent</span>
-                </div>
-                <div class="stat-card leave-stat">
-                    <span class="stat-num" id="stat-leave">0</span>
-                    <span class="stat-label">Leave</span>
-                </div>
-                <div class="stat-card careof-stat">
-                    <span class="stat-num" id="stat-careof">0</span>
-                    <span class="stat-label">Care Of</span>
-                </div>
-                <div class="stat-card highlight-stat">
-                    <span class="stat-num" id="stat-turnout">0%</span>
-                    <span class="stat-label">Turnout</span>
-                </div>
-            </section>
-
-            <!-- Mode Status & Mode Switcher Bar -->
-            <div id="attendance-mode-banner" style="display: flex; justify-content: space-between; align-items: center; margin-top: -2px;">
-                <span id="attendance-mode-badge" class="view-mode-badge">
-                    <i data-lucide="lock" style="width:11px; height:11px;"></i> Read-Only View
-                </span>
-                <button id="btn-toggle-edit-mode" class="primary-icon-btn" style="padding: 5px 10px; font-size: 11.5px;">
-                    <i data-lucide="edit-3" style="width:13px; height:13px;"></i>
-                    <span id="btn-toggle-edit-text">Edit Attendance</span>
-                </button>
-            </div>
-
-            <!-- Maestro Section -->
-            <div class="section-container">
-                <div class="section-title">
-                    <i data-lucide="crown"></i>
-                    <span>Designated Maestro</span>
-                </div>
-                <div id="event-maestro-card" class="maestro-card">
-                    <!-- Dynamic Maestro attendance row -->
-                </div>
-            </div>
-
-            <!-- Coordinators Section -->
-            <div id="event-coordinators-section" class="section-container">
-                <div class="section-title">
-                    <i data-lucide="shield-check" style="color: #22d3ee;"></i>
-                    <span>Event Coordinator(s)</span>
-                    <span id="coordinator-count-badge" class="badge">0</span>
-                </div>
-                <div id="event-coordinators-list" class="coordinator-cards-list">
-                    <!-- Dynamic Coordinator attendance rows -->
-                </div>
-            </div>
-
-            <!-- Roster Attendance Checklist -->
-            <div class="section-container">
-                <div class="section-header-row">
-                    <div class="section-title">
-                        <i data-lucide="users"></i>
-                        <span>Ensemble Roster</span>
-                        <span id="roster-count-badge" class="badge">0</span>
+            <!-- 1. EVENT CARDS LIST VIEW (Default View) -->
+            <div id="attendance-events-card-view">
+                <div class="view-header flex-between">
+                    <div>
+                        <h2>Event Attendance</h2>
+                        <p class="view-desc">Select an event below to open its attendance roster and roll call.</p>
                     </div>
-                    <button id="btn-mark-all-present" class="text-btn hidden">Mark All Present</button>
                 </div>
 
+                <!-- Event Search -->
                 <div class="search-sort-row">
-                    <div class="search-bar-wrapper">
+                    <div class="search-bar-wrapper" style="width: 100%;">
                         <i data-lucide="search" class="search-icon"></i>
-                        <input type="text" id="roster-search" placeholder="Search musicians or instruments...">
-                    </div>
-                    <div class="sort-wrapper">
-                        <i data-lucide="arrow-up-down" class="sort-icon"></i>
-                        <select id="attendance-sort-order" class="sort-dropdown" title="Sort Order">
-                            <option value="name-asc">Name (A → Z)</option>
-                            <option value="name-desc">Name (Z → A)</option>
-                            <option value="instrument-asc">Instrument (A → Z)</option>
-                        </select>
+                        <input type="text" id="attendance-event-list-search" placeholder="Search events by title, venue, or ensemble...">
                     </div>
                 </div>
 
-                <div id="attendance-roster-list" class="roster-list">
-                    <!-- Dynamic attendance list (Read-only badges or Edit mode buttons) -->
+                <!-- Events Cards List Grid -->
+                <div id="attendance-events-cards-list" class="events-card-grid">
+                    <!-- Dynamically populated event cards -->
                 </div>
             </div>
 
-            <!-- Sticky Save & Share Bar -->
-            <div class="event-action-bar">
-                <button id="btn-save-attendance" class="action-btn save-btn">
-                    <i data-lucide="save"></i>
-                    <span id="btn-save-text">Save Attendance</span>
-                </button>
-                <button id="btn-copy-report" class="action-btn share-btn">
-                    <i data-lucide="share-2"></i>
-                    <span>Share Report</span>
-                </button>
+            <!-- 2. OPENED EVENT ATTENDANCE DETAIL VIEW (Shown when an event card is opened) -->
+            <div id="attendance-event-detail-view" class="hidden">
+                <!-- Top Navigation with Back to Events button -->
+                <div class="event-detail-top-nav">
+                    <button id="btn-back-to-events-list" class="back-btn" title="Back to All Events">
+                        <i data-lucide="arrow-left" style="width:14px; height:14px;"></i>
+                        <span>All Events</span>
+                    </button>
+                    <select id="active-event-select" class="event-dropdown compact-select" style="max-width: 180px; padding: 5px 8px; font-size: 11px;"></select>
+                </div>
+
+                <div id="active-event-card" class="event-hero-card" style="margin-top: 4px;">
+                    <!-- Dynamically injected event hero info -->
+                </div>
+
+                <!-- Stats Overview Banner -->
+                <section class="stats-overview">
+                    <div class="stat-card present-stat">
+                        <span class="stat-num" id="stat-present">0</span>
+                        <span class="stat-label">Present</span>
+                    </div>
+                    <div class="stat-card absent-stat">
+                        <span class="stat-num" id="stat-absent">0</span>
+                        <span class="stat-label">Absent</span>
+                    </div>
+                    <div class="stat-card leave-stat">
+                        <span class="stat-num" id="stat-leave">0</span>
+                        <span class="stat-label">Leave</span>
+                    </div>
+                    <div class="stat-card careof-stat">
+                        <span class="stat-num" id="stat-careof">0</span>
+                        <span class="stat-label">Care Of</span>
+                    </div>
+                    <div class="stat-card highlight-stat">
+                        <span class="stat-num" id="stat-turnout">0%</span>
+                        <span class="stat-label">Turnout</span>
+                    </div>
+                </section>
+
+                <!-- Mode Status & Mode Switcher Bar -->
+                <div id="attendance-mode-banner" style="display: flex; justify-content: space-between; align-items: center; margin-top: -2px;">
+                    <span id="attendance-mode-badge" class="view-mode-badge">
+                        <i data-lucide="lock" style="width:11px; height:11px;"></i> Read-Only View
+                    </span>
+                    <button id="btn-toggle-edit-mode" class="primary-icon-btn" style="padding: 5px 10px; font-size: 11.5px;">
+                        <i data-lucide="edit-3" style="width:13px; height:13px;"></i>
+                        <span id="btn-toggle-edit-text">Edit Attendance</span>
+                    </button>
+                </div>
+
+                <!-- Maestro Section -->
+                <div class="section-container">
+                    <div class="section-title">
+                        <i data-lucide="crown"></i>
+                        <span>Designated Maestro</span>
+                    </div>
+                    <div id="event-maestro-card" class="maestro-card">
+                        <!-- Dynamic Maestro attendance row -->
+                    </div>
+                </div>
+
+                <!-- Coordinators Section -->
+                <div id="event-coordinators-section" class="section-container">
+                    <div class="section-title">
+                        <i data-lucide="shield-check" style="color: #22d3ee;"></i>
+                        <span>Event Coordinator(s)</span>
+                        <span id="coordinator-count-badge" class="badge">0</span>
+                    </div>
+                    <div id="event-coordinators-list" class="coordinator-cards-list">
+                        <!-- Dynamic Coordinator attendance rows -->
+                    </div>
+                </div>
+
+                <!-- Roster Attendance Checklist -->
+                <div class="section-container">
+                    <div class="section-header-row">
+                        <div class="section-title">
+                            <i data-lucide="users"></i>
+                            <span>Ensemble Roster</span>
+                            <span id="roster-count-badge" class="badge">0</span>
+                        </div>
+                        <button id="btn-mark-all-present" class="text-btn hidden">Mark All Present</button>
+                    </div>
+
+                    <div class="search-sort-row">
+                        <div class="search-bar-wrapper">
+                            <i data-lucide="search" class="search-icon"></i>
+                            <input type="text" id="roster-search" placeholder="Search musicians or instruments...">
+                        </div>
+                        <div class="sort-wrapper">
+                            <i data-lucide="arrow-up-down" class="sort-icon"></i>
+                            <select id="attendance-sort-order" class="sort-dropdown" title="Sort Order">
+                                <option value="name-asc">Name (A → Z)</option>
+                                <option value="name-desc">Name (Z → A)</option>
+                                <option value="instrument-asc">Instrument (A → Z)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="attendance-roster-list" class="roster-list">
+                        <!-- Dynamic attendance list (Read-only badges or Edit mode buttons) -->
+                    </div>
+                </div>
+
+                <!-- Sticky Save & Share Bar -->
+                <div class="event-action-bar">
+                    <button id="btn-save-attendance" class="action-btn save-btn">
+                        <i data-lucide="save"></i>
+                        <span id="btn-save-text">Save Attendance</span>
+                    </button>
+                    <button id="btn-copy-report" class="action-btn share-btn">
+                        <i data-lucide="share-2"></i>
+                        <span>Share Report</span>
+                    </button>
+                </div>
             </div>
         </main>
 
@@ -274,7 +303,7 @@
             <div class="modal-sheet">
                 <div class="modal-header">
                     <h2 id="modal-event-title">Schedule New Event</h2>
-                    <button class="close-modal-btn" data-close="modal-event"><i data-lucide="x"></i></button>
+                    <button type="button" class="close-modal-btn" data-close="modal-event" title="Close"><i data-lucide="x"></i></button>
                 </div>
                 <form id="form-event" class="modal-body">
                     <input type="hidden" id="event-form-id">
@@ -356,6 +385,7 @@
                     </div>
 
                     <div class="modal-footer">
+                        <button type="button" class="modal-cancel-btn close-modal-btn" data-close="modal-event">Cancel</button>
                         <button type="submit" class="submit-btn">
                             <i data-lucide="check"></i>
                             <span>Save Event</span>
@@ -370,7 +400,7 @@
             <div class="modal-sheet">
                 <div class="modal-header">
                     <h2 id="modal-musician-title">Add Musician</h2>
-                    <button class="close-modal-btn" data-close="modal-musician"><i data-lucide="x"></i></button>
+                    <button type="button" class="close-modal-btn" data-close="modal-musician" title="Close"><i data-lucide="x"></i></button>
                 </div>
                 <form id="form-musician" class="modal-body">
                     <input type="hidden" id="musician-form-id">
@@ -412,6 +442,7 @@
                     </div>
 
                     <div class="modal-footer">
+                        <button type="button" class="modal-cancel-btn close-modal-btn" data-close="modal-musician">Cancel</button>
                         <button type="submit" class="submit-btn">
                             <i data-lucide="check"></i>
                             <span>Save Musician</span>
@@ -426,7 +457,7 @@
             <div class="modal-sheet">
                 <div class="modal-header">
                     <h2>Assign Care Of (Substitute)</h2>
-                    <button class="close-modal-btn" data-close="modal-careof"><i data-lucide="x"></i></button>
+                    <button type="button" class="close-modal-btn" data-close="modal-careof" title="Close"><i data-lucide="x"></i></button>
                 </div>
                 <form id="form-careof" class="modal-body">
                     <input type="hidden" id="careof-member-id">
@@ -446,13 +477,14 @@
                         <input type="text" id="careof-custom-name" placeholder="e.g. Guest Performer Alex">
                     </div>
 
-                    <div class="modal-footer" style="display:flex; gap:10px;">
-                        <button type="button" id="btn-remove-careof" class="sm-btn" style="flex:1; justify-content:center; padding:12px; color:var(--color-absent); border-color:var(--color-absent-border);">
+                    <div class="modal-footer" style="display:flex; gap:8px;">
+                        <button type="button" id="btn-remove-careof" class="sm-btn" style="flex:1; justify-content:center; padding:10px; color:var(--color-absent); border-color:var(--color-absent-border);">
                             <i data-lucide="trash-2"></i> Remove C/O
                         </button>
+                        <button type="button" class="modal-cancel-btn close-modal-btn" data-close="modal-careof" style="flex:1;">Cancel</button>
                         <button type="submit" class="submit-btn" style="flex:2;">
                             <i data-lucide="user-check"></i>
-                            <span>Confirm Care Of</span>
+                            <span>Confirm C/O</span>
                         </button>
                     </div>
                 </form>

@@ -16,6 +16,8 @@ let state = {
     config: {},
     events: [],
     activeEventId: '',
+    attendanceViewMode: 'list', // 'list' (events cards) | 'detail' (opened event roll call)
+    eventSearch: '',
     currentTab: 'view-events',
     rosterFilter: 'all',
     rosterSearch: '',
@@ -155,11 +157,113 @@ async function apiSaveConfig(config) {
 // Master Render Method
 function renderAll() {
     renderNavigation();
-    renderActiveEventView();
+    renderEventsCardList();
+    if (state.activeEventId) {
+        renderActiveEventView();
+    }
     renderHistoryView();
     renderRosterView();
     populateSelectDropdowns();
     lucide.createIcons();
+}
+
+// ----------------------------------------------------
+// TAB 1 (A): EVENT CARDS SELECTION LIST
+// ----------------------------------------------------
+function renderEventsCardList() {
+    const container = document.getElementById('attendance-events-cards-list');
+    if (!container) return;
+
+    let filteredEvents = [...state.events];
+
+    if (state.eventSearch && state.eventSearch.trim()) {
+        const q = state.eventSearch.toLowerCase();
+        filteredEvents = filteredEvents.filter(e => 
+            e.title.toLowerCase().includes(q) ||
+            e.venue.toLowerCase().includes(q) ||
+            getEnsembleLabel(e.ensembleType).toLowerCase().includes(q)
+        );
+    }
+
+    // Sort by date (newest / upcoming first)
+    filteredEvents.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    if (filteredEvents.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 30px 16px; background: var(--bg-card); border: 1px dashed var(--border-color); border-radius: 12px;">
+                <i data-lucide="calendar-x" style="width: 32px; height: 32px; color: var(--color-text-sub); margin-bottom: 8px;"></i>
+                <p style="font-size: 13px; font-weight: 600; color: #ffffff; margin-bottom: 4px;">No events found</p>
+                <p class="view-desc" style="margin-bottom: 12px;">Schedule an event to start recording roll call.</p>
+                <button class="primary-icon-btn" style="margin: 0 auto;" onclick="openNewEventModal()">
+                    <i data-lucide="plus"></i>
+                    <span>Schedule New Event</span>
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = filteredEvents.map(evt => {
+        const roster = getEventRoster(evt);
+        const maestroObj = state.members.find(m => m.id === evt.maestroId);
+        const coordinatorObjs = (evt.coordinatorIds || [])
+            .map(id => state.members.find(m => m.id === id && !m.isDeleted))
+            .filter(Boolean);
+        const allParticipants = [
+            ...(maestroObj ? [maestroObj] : []),
+            ...coordinatorObjs,
+            ...roster
+        ];
+
+        let pCount = 0, aCount = 0, lCount = 0, cCount = 0;
+        allParticipants.forEach(p => {
+            const st = evt.attendance ? evt.attendance[p.id] : null;
+            if (st === 'present') pCount++;
+            else if (st === 'absent') aCount++;
+            else if (st === 'leave') lCount++;
+            else if (st === 'careof') cCount++;
+        });
+
+        const turnout = allParticipants.length > 0 ? Math.round(((pCount + cCount) / allParticipants.length) * 100) : 0;
+        const isCompleted = evt.status === 'completed';
+
+        return `
+            <div class="event-entry-card" onclick="openEventAttendance('${evt.id}')">
+                <div class="event-entry-top">
+                    <div>
+                        <h3 class="event-entry-title">${escapeHtml(evt.title)}</h3>
+                        <span class="ensemble-badge badge-${evt.ensembleType}">${getEnsembleLabel(evt.ensembleType)}</span>
+                    </div>
+                    ${isCompleted 
+                        ? '<span class="read-status-badge present" style="font-size:10px;"><i data-lucide="check-check"></i> Recorded</span>' 
+                        : '<span class="read-status-badge leave" style="font-size:10px;"><i data-lucide="clock"></i> Active</span>'}
+                </div>
+
+                <div class="event-entry-meta">
+                    <div class="meta-item"><i data-lucide="calendar"></i> <span>${formatDate(evt.date)}</span></div>
+                    <div class="meta-item"><i data-lucide="clock"></i> <span>Call: ${evt.callTime}</span></div>
+                    <div class="meta-item"><i data-lucide="map-pin"></i> <span>${escapeHtml(evt.venue)}</span></div>
+                    <div class="meta-item"><i data-lucide="crown"></i> <span>Maestro: ${maestroObj ? escapeHtml(maestroObj.name) : 'None'}</span></div>
+                </div>
+
+                <div class="history-stats-pill-row" style="margin-top: 2px;">
+                    <span class="history-pill turnout">Turnout: ${turnout}%</span>
+                    <span class="history-pill present">✅ ${pCount} Present</span>
+                    <span class="history-pill absent">❌ ${aCount} Absent</span>
+                    ${cCount > 0 ? `<span class="history-pill careof">🔄 ${cCount} C/O</span>` : ''}
+                    ${lCount > 0 ? `<span class="history-pill leave">⏳ ${lCount} Leave</span>` : ''}
+                </div>
+
+                <div class="event-entry-footer">
+                    <span class="view-desc"><i data-lucide="users" style="width:12px;height:12px;display:inline;vertical-align:middle;"></i> ${allParticipants.length} Musician${allParticipants.length === 1 ? '' : 's'}</span>
+                    <button class="event-open-btn" onclick="event.stopPropagation(); openEventAttendance('${evt.id}')">
+                        <i data-lucide="clipboard-check" style="width:13px;height:13px;"></i>
+                        <span>Open Attendance</span>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 // Populate Dropdown Menus
@@ -818,6 +922,10 @@ function setupEventListeners() {
     document.querySelectorAll('.nav-item').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const target = e.currentTarget.getAttribute('data-target');
+            if (target === 'view-events' && state.currentTab !== 'view-events') {
+                // When switching to Attendance tab from another tab, show the events card list
+                state.attendanceViewMode = 'list';
+            }
             state.currentTab = target;
 
             document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
@@ -830,7 +938,23 @@ function setupEventListeners() {
         });
     });
 
-    // Active Event Switcher
+    // Back to Events List Button
+    const btnBackEvents = document.getElementById('btn-back-to-events-list');
+    if (btnBackEvents) {
+        btnBackEvents.addEventListener('click', () => closeEventDetailView());
+    }
+
+    // Attendance Events List Search
+    const eventSearchInput = document.getElementById('attendance-event-list-search');
+    if (eventSearchInput) {
+        eventSearchInput.addEventListener('input', (e) => {
+            state.eventSearch = e.target.value;
+            renderEventsCardList();
+            lucide.createIcons();
+        });
+    }
+
+    // Active Event Switcher (inside opened event detail view)
     const activeEventSelect = document.getElementById('active-event-select');
     if (activeEventSelect) {
         activeEventSelect.addEventListener('change', (e) => {
@@ -1020,19 +1144,24 @@ function setupEventListeners() {
         });
     }
 
-    // Modal Close Buttons with Smooth Animation
-    document.querySelectorAll('.close-modal-btn').forEach(btn => {
+    // Modal Close & Cancel Buttons with Smooth Animation
+    document.querySelectorAll('[data-close]').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const modalId = e.currentTarget.getAttribute('data-close');
             if (modalId) closeModal(modalId);
         });
     });
 
-    // Close Modal on Backdrop Click
+    // Make Modals Sticky: Clicking backdrop does NOT close the modal, giving subtle feedback
     document.querySelectorAll('.modal-overlay').forEach(overlay => {
         overlay.addEventListener('click', (e) => {
             if (e.target === overlay) {
-                closeModal(overlay.id);
+                const sheet = overlay.querySelector('.modal-sheet');
+                if (sheet) {
+                    sheet.classList.remove('modal-sheet-shake');
+                    void sheet.offsetWidth; // Force CSS reflow
+                    sheet.classList.add('modal-sheet-shake');
+                }
             }
         });
     });
@@ -1504,18 +1633,24 @@ function handleMusicianFormSubmit(e) {
     renderAll();
 }
 
-// Switch directly from History to Attendance tab for a specific event
+// Switch directly to Attendance Detail View for a specific event
 window.openEventAttendance = function(eventId) {
     state.activeEventId = eventId;
+    state.attendanceViewMode = 'detail';
     state.currentTab = 'view-events';
-    state.isAttendanceEditing = false; // Always open in clean Read-Only view
+    state.isAttendanceEditing = false; // Always open in safe Read-Only view
 
     document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-    document.querySelector('.nav-item[data-target="view-events"]').classList.add('active');
+    const attNav = document.querySelector('.nav-item[data-target="view-events"]');
+    if (attNav) attNav.classList.add('active');
 
-    document.querySelectorAll('.tab-view').forEach(v => v.classList.add('hidden'));
-    document.getElementById('view-events').classList.remove('hidden');
+    renderAll();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
 
+// Return from opened event attendance to the Events cards list
+window.closeEventDetailView = function() {
+    state.attendanceViewMode = 'list';
     renderAll();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
@@ -1612,6 +1747,18 @@ function renderNavigation() {
         if (v.id === state.currentTab) v.classList.remove('hidden');
         else v.classList.add('hidden');
     });
+
+    if (state.currentTab === 'view-events') {
+        const cardView = document.getElementById('attendance-events-card-view');
+        const detailView = document.getElementById('attendance-event-detail-view');
+        if (state.attendanceViewMode === 'detail' && state.activeEventId) {
+            if (cardView) cardView.classList.add('hidden');
+            if (detailView) detailView.classList.remove('hidden');
+        } else {
+            if (cardView) cardView.classList.remove('hidden');
+            if (detailView) detailView.classList.add('hidden');
+        }
+    }
 }
 
 function formatDate(dateStr) {

@@ -222,6 +222,114 @@ h1 {
     border-color: var(--border-focus);
 }
 
+/* Event Cards Grid in Attendance View */
+.events-card-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.event-entry-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    box-shadow: var(--shadow-sm);
+}
+
+.event-entry-card:hover {
+    border-color: rgba(99, 102, 241, 0.6);
+    background: #182236;
+    transform: translateY(-1px);
+}
+
+.event-entry-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.event-entry-title {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1.3;
+}
+
+.event-entry-meta {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 5px;
+    font-size: 11px;
+    color: var(--color-text-muted);
+    background: rgba(0, 0, 0, 0.2);
+    padding: 7px 10px;
+    border-radius: 8px;
+}
+
+.event-entry-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+}
+
+.event-open-btn {
+    background: var(--primary-grad);
+    border: none;
+    color: #ffffff;
+    font-family: var(--font-sans);
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.event-open-btn:hover {
+    opacity: 0.92;
+}
+
+.event-detail-top-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 2px;
+}
+
+.back-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-color);
+    color: #ffffff;
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background 0.2s;
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
 /* Global Select Options */
 select option {
     background-color: #1e293b;
@@ -1305,10 +1413,40 @@ select option {
 
 .modal-footer {
     margin-top: 4px;
+    display: flex;
+    gap: 8px;
+}
+
+.modal-cancel-btn {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-color);
+    color: var(--color-text-muted);
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 12.5px;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+}
+
+.modal-cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.modal-cancel-btn:active {
+    transform: translateY(1px);
 }
 
 .submit-btn {
-    width: 100%;
+    flex: 2;
     background: var(--primary-grad);
     border: none;
     color: #ffffff;
@@ -1324,6 +1462,19 @@ select option {
     gap: 6px;
     transition: all 0.2s ease;
     box-shadow: var(--shadow-sm);
+}
+
+/* Sticky Modal Nudge Animation on Backdrop Tap */
+@keyframes modalShake {
+    0%, 100% { transform: translateY(0) scale(1); }
+    20% { transform: translateY(-4px) scale(1.01); }
+    40% { transform: translateY(2px) scale(0.995); }
+    60% { transform: translateY(-2px) scale(1.005); }
+    80% { transform: translateY(1px) scale(1); }
+}
+
+.modal-sheet-shake {
+    animation: modalShake 0.38s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
 .submit-btn:hover {
