@@ -6,9 +6,15 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "pull-db": "node pull-db.js"
+    "pull-db": "node pull-db.js",
+    "build:app": "node build-www.js",
+    "cap:sync": "node build-www.js && npx cap sync android",
+    "cap:open": "npx cap open android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.1",
+    "@capacitor/cli": "^7.6.9",
+    "@capacitor/core": "^8.5.1",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
     "express": "^4.19.2",

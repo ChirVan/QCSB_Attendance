@@ -1,0 +1,12 @@
+{
+  "appId": "com.bandsync.attendance",
+  "appName": "BandSync",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}
