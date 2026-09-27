@@ -3,7 +3,7 @@
 import { state, loadState, saveState } from './state.js';
 import { apiSaveConfig, apiSaveAttendance } from './api.js';
 import { formatDate, getEnsembleLabel, getBandLabel, showToast, openModal, closeModal, escapeHtml } from './utils.js';
-import { renderEventsCardList, renderActiveEventView, getEventRoster, setAttendanceStatus, openEventAttendance, closeEventDetailView, copySingleEventReport } from './attendance.js';
+import { renderEventsCardList, renderActiveEventView, getEventRoster, setAttendanceStatus, openEventAttendance, closeEventDetailView, copySingleEventReport, setMonthFilter } from './attendance.js';
 import { renderRosterView, deleteMusician, openNewMusicianModal, openEditMusicianModal, handleMusicianFormSubmit } from './roster.js';
 import { renderCustomRosterChecklist, toggleCustomMemberSelection, renderEventCoordinatorChecklist, toggleCoordinatorSelection, openNewEventModal, openEditEventModal, handleEventFormSubmit, handleCareOfClick } from './events.js';
 import { renderHistoryView } from './history.js';
@@ -13,6 +13,7 @@ window.openEventAttendance = openEventAttendance;
 window.closeEventDetailView = closeEventDetailView;
 window.copySingleEventReport = copySingleEventReport;
 window.setAttendanceStatus = setAttendanceStatus;
+window.setMonthFilter = setMonthFilter;
 window.openNewEventModal = openNewEventModal;
 window.openEditEventModal = openEditEventModal;
 window.openNewMusicianModal = openNewMusicianModal;

@@ -16,6 +16,7 @@ export const state = {
     activeEventId: '',
     attendanceViewMode: 'list', // 'list' (events cards) | 'detail' (opened event roll call)
     eventSearch: '',
+    selectedMonthFilter: 'all',
     currentTab: 'view-events',
     rosterFilter: 'all',
     rosterSearch: '',

@@ -222,12 +222,85 @@ h1 {
     border-color: var(--border-focus);
 }
 
+/* Month Grouping & Dividers on Dashboard */
+.month-groups-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 4px;
+}
+
+.month-group-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.month-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 12px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.14) 0%, rgba(168, 85, 247, 0.09) 100%);
+    border: 1px solid rgba(99, 102, 241, 0.28);
+    border-radius: 11px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.month-group-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.month-header-icon-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: rgba(99, 102, 241, 0.25);
+    color: #a5b4fc;
+}
+
+.month-header-icon {
+    width: 13px;
+    height: 13px;
+}
+
+.month-header-text {
+    font-size: 13px;
+    font-weight: 700;
+    color: #f8fafc;
+    letter-spacing: 0.2px;
+}
+
+.month-header-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.month-event-count-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(99, 102, 241, 0.22);
+    border: 1px solid rgba(129, 140, 248, 0.38);
+    color: #c7d2fe;
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+
 /* Event Cards Grid in Attendance View */
 .events-card-grid {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-top: 4px;
+    gap: 9px;
 }
 
 .event-entry-card {

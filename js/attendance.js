@@ -2,11 +2,130 @@
 
 import { state, saveState } from './state.js';
 import { apiSaveAttendance } from './api.js';
-import { formatDate, getEnsembleLabel, getBandLabel, escapeHtml, copyToClipboard, showToast } from './utils.js';
+import { formatDate, formatMonthYear, formatShortMonthYear, getEnsembleLabel, getBandLabel, escapeHtml, copyToClipboard, showToast } from './utils.js';
+
+export function setMonthFilter(monthKey) {
+    state.selectedMonthFilter = monthKey;
+    renderEventsCardList();
+}
+window.setMonthFilter = setMonthFilter;
+
+export function renderMonthFilterPills() {
+    const pillContainer = document.getElementById('attendance-month-pills');
+    if (!pillContainer) return;
+
+    if (!state.events || state.events.length === 0) {
+        pillContainer.innerHTML = '';
+        pillContainer.style.display = 'none';
+        return;
+    }
+
+    // Collect unique months from all events
+    const monthMap = new Map();
+    state.events.forEach(e => {
+        if (e.date) {
+            const key = e.date.substring(0, 7);
+            const count = (monthMap.get(key)?.count || 0) + 1;
+            monthMap.set(key, {
+                key,
+                label: formatMonthYear(e.date),
+                shortLabel: formatShortMonthYear(e.date),
+                count
+            });
+        }
+    });
+
+    const months = Array.from(monthMap.values()).sort((a, b) => b.key.localeCompare(a.key));
+
+    // If only 1 month or 0 months, we can still show "All" and the month, or hide if <= 1
+    if (months.length <= 1) {
+        pillContainer.innerHTML = '';
+        pillContainer.style.display = 'none';
+        return;
+    }
+
+    pillContainer.style.display = 'flex';
+    const currentFilter = state.selectedMonthFilter || 'all';
+
+    pillContainer.innerHTML = `
+        <button class="pill-btn ${currentFilter === 'all' ? 'active' : ''}" onclick="setMonthFilter('all')">
+            All Months (${state.events.length})
+        </button>
+        ${months.map(m => `
+            <button class="pill-btn ${currentFilter === m.key ? 'active' : ''}" onclick="setMonthFilter('${m.key}')">
+                ${escapeHtml(m.shortLabel)} (${m.count})
+            </button>
+        `).join('')}
+    `;
+}
+
+export function renderEventCardHtml(evt) {
+    const roster = getEventRoster(evt);
+    const maestroObj = state.members.find(m => m.id === evt.maestroId);
+    const coordinatorObjs = (evt.coordinatorIds || [])
+        .map(id => state.members.find(m => m.id === id && !m.isDeleted))
+        .filter(Boolean);
+    const allParticipants = [
+        ...(maestroObj ? [maestroObj] : []),
+        ...coordinatorObjs,
+        ...roster
+    ];
+
+    let pCount = 0, aCount = 0, lCount = 0, cCount = 0;
+    allParticipants.forEach(p => {
+        const st = evt.attendance ? evt.attendance[p.id] : null;
+        if (st === 'present') pCount++;
+        else if (st === 'absent') aCount++;
+        else if (st === 'leave') lCount++;
+        else if (st === 'careof') cCount++;
+    });
+
+    const turnout = allParticipants.length > 0 ? Math.round(((pCount + cCount) / allParticipants.length) * 100) : 0;
+    const isCompleted = evt.status === 'completed';
+
+    return `
+        <div class="event-entry-card" onclick="openEventAttendance('${evt.id}')">
+            <div class="event-entry-top">
+                <div>
+                    <h3 class="event-entry-title">${escapeHtml(evt.title)}</h3>
+                    <span class="ensemble-badge badge-${evt.ensembleType}">${getEnsembleLabel(evt.ensembleType)}</span>
+                </div>
+                ${isCompleted 
+                    ? '<span class="read-status-badge present" style="font-size:10px;"><i data-lucide="check-check"></i> Recorded</span>' 
+                    : '<span class="read-status-badge leave" style="font-size:10px;"><i data-lucide="clock"></i> Active</span>'}
+            </div>
+
+            <div class="event-entry-meta">
+                <div class="meta-item"><i data-lucide="calendar"></i> <span>${formatDate(evt.date)}</span></div>
+                <div class="meta-item"><i data-lucide="clock"></i> <span>Call: ${evt.callTime}</span></div>
+                <div class="meta-item"><i data-lucide="map-pin"></i> <span>${escapeHtml(evt.venue)}</span></div>
+                <div class="meta-item"><i data-lucide="crown"></i> <span>Maestro: ${maestroObj ? escapeHtml(maestroObj.name) : 'None'}</span></div>
+            </div>
+
+            <div class="history-stats-pill-row" style="margin-top: 2px;">
+                <span class="history-pill turnout">Turnout: ${turnout}%</span>
+                <span class="history-pill present">✅ ${pCount} Present</span>
+                <span class="history-pill absent">❌ ${aCount} Absent</span>
+                ${cCount > 0 ? `<span class="history-pill careof">🔄 ${cCount} C/O</span>` : ''}
+                ${lCount > 0 ? `<span class="history-pill leave">⏳ ${lCount} Leave</span>` : ''}
+            </div>
+
+            <div class="event-entry-footer">
+                <span class="view-desc"><i data-lucide="users" style="width:12px;height:12px;display:inline;vertical-align:middle;"></i> ${allParticipants.length} Musician${allParticipants.length === 1 ? '' : 's'}</span>
+                <button class="event-open-btn" onclick="event.stopPropagation(); openEventAttendance('${evt.id}')">
+                    <i data-lucide="clipboard-check" style="width:13px;height:13px;"></i>
+                    <span>Open Attendance</span>
+                </button>
+            </div>
+        </div>
+    `;
+}
 
 export function renderEventsCardList() {
     const container = document.getElementById('attendance-events-cards-list');
     if (!container) return;
+
+    renderMonthFilterPills();
 
     let filteredEvents = [...state.events];
 
@@ -17,6 +136,13 @@ export function renderEventsCardList() {
             e.venue.toLowerCase().includes(q) ||
             getEnsembleLabel(e.ensembleType).toLowerCase().includes(q)
         );
+    }
+
+    if (state.selectedMonthFilter && state.selectedMonthFilter !== 'all') {
+        filteredEvents = filteredEvents.filter(e => {
+            const key = e.date ? e.date.substring(0, 7) : 'unscheduled';
+            return key === state.selectedMonthFilter;
+        });
     }
 
     // Sort by date (newest / upcoming first)
@@ -34,70 +160,54 @@ export function renderEventsCardList() {
                 </button>
             </div>
         `;
+        if (window.lucide && window.lucide.createIcons) lucide.createIcons();
         return;
     }
 
-    container.innerHTML = filteredEvents.map(evt => {
-        const roster = getEventRoster(evt);
-        const maestroObj = state.members.find(m => m.id === evt.maestroId);
-        const coordinatorObjs = (evt.coordinatorIds || [])
-            .map(id => state.members.find(m => m.id === id && !m.isDeleted))
-            .filter(Boolean);
-        const allParticipants = [
-            ...(maestroObj ? [maestroObj] : []),
-            ...coordinatorObjs,
-            ...roster
-        ];
+    // Group filtered events by Month (YYYY-MM)
+    const monthGroups = [];
+    const groupMap = new Map();
 
-        let pCount = 0, aCount = 0, lCount = 0, cCount = 0;
-        allParticipants.forEach(p => {
-            const st = evt.attendance ? evt.attendance[p.id] : null;
-            if (st === 'present') pCount++;
-            else if (st === 'absent') aCount++;
-            else if (st === 'leave') lCount++;
-            else if (st === 'careof') cCount++;
-        });
+    filteredEvents.forEach(evt => {
+        const groupKey = evt.date ? evt.date.substring(0, 7) : 'unscheduled';
+        if (!groupMap.has(groupKey)) {
+            const groupObj = {
+                key: groupKey,
+                label: evt.date ? formatMonthYear(evt.date) : 'Unscheduled Events',
+                events: []
+            };
+            groupMap.set(groupKey, groupObj);
+            monthGroups.push(groupObj);
+        }
+        groupMap.get(groupKey).events.push(evt);
+    });
 
-        const turnout = allParticipants.length > 0 ? Math.round(((pCount + cCount) / allParticipants.length) * 100) : 0;
-        const isCompleted = evt.status === 'completed';
-
-        return `
-            <div class="event-entry-card" onclick="openEventAttendance('${evt.id}')">
-                <div class="event-entry-top">
-                    <div>
-                        <h3 class="event-entry-title">${escapeHtml(evt.title)}</h3>
-                        <span class="ensemble-badge badge-${evt.ensembleType}">${getEnsembleLabel(evt.ensembleType)}</span>
+    container.innerHTML = monthGroups.map(group => `
+        <section class="month-group-section" id="month-group-${group.key}">
+            <div class="month-group-header">
+                <div class="month-group-title">
+                    <div class="month-header-icon-box">
+                        <i data-lucide="calendar" class="month-header-icon"></i>
                     </div>
-                    ${isCompleted 
-                        ? '<span class="read-status-badge present" style="font-size:10px;"><i data-lucide="check-check"></i> Recorded</span>' 
-                        : '<span class="read-status-badge leave" style="font-size:10px;"><i data-lucide="clock"></i> Active</span>'}
+                    <span class="month-header-text">${escapeHtml(group.label)}</span>
                 </div>
-
-                <div class="event-entry-meta">
-                    <div class="meta-item"><i data-lucide="calendar"></i> <span>${formatDate(evt.date)}</span></div>
-                    <div class="meta-item"><i data-lucide="clock"></i> <span>Call: ${evt.callTime}</span></div>
-                    <div class="meta-item"><i data-lucide="map-pin"></i> <span>${escapeHtml(evt.venue)}</span></div>
-                    <div class="meta-item"><i data-lucide="crown"></i> <span>Maestro: ${maestroObj ? escapeHtml(maestroObj.name) : 'None'}</span></div>
-                </div>
-
-                <div class="history-stats-pill-row" style="margin-top: 2px;">
-                    <span class="history-pill turnout">Turnout: ${turnout}%</span>
-                    <span class="history-pill present">✅ ${pCount} Present</span>
-                    <span class="history-pill absent">❌ ${aCount} Absent</span>
-                    ${cCount > 0 ? `<span class="history-pill careof">🔄 ${cCount} C/O</span>` : ''}
-                    ${lCount > 0 ? `<span class="history-pill leave">⏳ ${lCount} Leave</span>` : ''}
-                </div>
-
-                <div class="event-entry-footer">
-                    <span class="view-desc"><i data-lucide="users" style="width:12px;height:12px;display:inline;vertical-align:middle;"></i> ${allParticipants.length} Musician${allParticipants.length === 1 ? '' : 's'}</span>
-                    <button class="event-open-btn" onclick="event.stopPropagation(); openEventAttendance('${evt.id}')">
-                        <i data-lucide="clipboard-check" style="width:13px;height:13px;"></i>
-                        <span>Open Attendance</span>
-                    </button>
+                <div class="month-header-meta">
+                    <span class="month-event-count-badge">
+                        <i data-lucide="layers" style="width:11px; height:11px;"></i>
+                        ${group.events.length} Event${group.events.length === 1 ? '' : 's'}
+                    </span>
                 </div>
             </div>
-        `;
-    }).join('');
+
+            <div class="events-card-grid">
+                ${group.events.map(evt => renderEventCardHtml(evt)).join('')}
+            </div>
+        </section>
+    `).join('');
+
+    if (window.lucide && window.lucide.createIcons) {
+        lucide.createIcons();
+    }
 }
 
 export function renderActiveEventView() {

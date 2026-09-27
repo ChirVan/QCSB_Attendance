@@ -6,6 +6,20 @@ export function formatDate(dateStr) {
     return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+export function formatMonthYear(dateStr) {
+    if (!dateStr) return 'Unscheduled';
+    const d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d.getTime())) return 'Unscheduled';
+    return d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+}
+
+export function formatShortMonthYear(dateStr) {
+    if (!dateStr) return 'Unscheduled';
+    const d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d.getTime())) return 'Unscheduled';
+    return d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+}
+
 export function getEnsembleLabel(type) {
     switch (type) {
         case 'band1': return 'Band 1';
